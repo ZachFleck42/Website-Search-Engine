@@ -1,7 +1,9 @@
+import psycopg2
 import requests
 import sys
 import time
 from bs4 import BeautifulSoup
+from psycopg2 import sql
 from urllib.parse import urlparse
 
 # Create a queue of URLs to visit and collect data from.
@@ -17,6 +19,49 @@ MAX_DEPTH = int(sys.argv[2])
 
 # Create a list of already-visited links to prevent visiting the same page twice
 visitedLinks = []
+
+
+def tableExists(DbConnection, tableName):
+    '''
+    Accepts a database connection and a table name to check.
+    If table exists in the databse, function returns True. Returns false otherwise.
+    '''
+    cur = DbConnection.cursor()
+    cur.execute("""
+        SELECT COUNT(*)
+        FROM information_schema.tables
+        WHERE table_name = '{0}'
+        """.format(tableName.replace('\'', '\'\'')))
+    if cur.fetchone()[0] == 1:
+        cur.close()
+        return True
+
+    cur.close()
+    return False
+
+
+def initializeDb(tableName):
+    '''
+    Connects to a database and creates a fresh table with the name {tableName}.
+    Closes connection afterwards and returns nothing.
+    '''
+    # Connect to PostgresSQL database and get a cursor
+    conn = psycopg2.connect(host='postgres', database='postgres', user='postgres', password='postgres')
+    cur = conn.cursor()
+
+    # If a table already exists for the website, delete it
+    if tableExists(conn, tableName):
+        cur.execute(sql.SQL("DROP TABLE {}")
+                    .format(sql.Identifier(tableName)))
+
+    # Create a new table for the website
+    cur.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, face_count INT)")
+                .format(sql.Identifier(tableName)))
+
+    # Commit changes and close the connection
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
 def getLinks(pageResponse):
@@ -88,6 +133,7 @@ def getLinks(pageResponse):
     # Remove any duplicate links in the list and return
     return list(set(linksClean))
     
+
 if __name__ == "__main__":
     # Check for valid number of arguments (2) in the script call.
     if (len(sys.argv) != 3):
@@ -97,6 +143,20 @@ if __name__ == "__main__":
     else:
         urls.append((INITIAL_URL, 0))   # Initial URL has a depth of 0
         startTime = time.time()         # Start timing how long program takes to run
+        
+    # Connect to a SQL database and create a table for the domain
+    tableName = (urlparse(INITIAL_URL).hostname).split('.', 1)[0]
+    conn = psycopg2.connect(host='postgres', database='postgres', user='postgres', password='postgres')
+    cur = conn.cursor()
+
+    # If a table already exists for the domain, delete it
+    if tableExists(conn, tableName):
+        cur.execute(sql.SQL("DROP TABLE {}")
+                    .format(sql.Identifier(tableName)))
+
+    # Create a new table for the website
+    cur.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR)")
+                .format(sql.Identifier(tableName)))
 
     # Initialization is now done; begin processing the queue
     webpageVisitCount = 0
@@ -123,6 +183,17 @@ if __name__ == "__main__":
             continue
         else:
             print("Connected successfully. ", end='')
+            
+        # Collect data from webpage
+        parsedPage = BeautifulSoup(pageResponse.text, 'html.parser')
+        pageTitle = parsedPage.title.string
+        pageText = parsedPage.get_text()
+        
+        # Append data to database
+        cur.execute(
+            sql.SQL("INSERT INTO {} VALUES (%s, %s)")
+            .format(sql.Identifier(tableName)),
+            [pageURL, pageTitle, pageText])
 
         # If the current webpage is not at MAX_DEPTH, get a list of links found
         # in the page's <a> tags. Links will be 'cleaned' (see function docstring)
@@ -136,10 +207,13 @@ if __name__ == "__main__":
 
         print("--------------------")
 
-    # Webdriver no longer needed
-    print("All URLs visited!")
-    print("--------------------")
+    # Commit changes and close connection to database
+    conn.commit()
+    cur.close()
+    conn.close()
 
     # Print results to the console
+    print("All URLs visited!")
+    print("--------------------")
     print(f"Total number of webpages analyzed: {webpageVisitCount}")
     print(f"Program took {(time.time() - startTime):.2f} seconds to run.")
