@@ -1,0 +1,17 @@
+version: '3.9'
+
+services:
+  app:
+    build: .
+    environment:
+      - POSTGRES_DB=searchEngineDb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports: 
+      - 5432:5432
+    volumes: 
+      - database:/var/lib/postgresql/data
+      - ./app:/app
+    
+volumes: 
+  database:

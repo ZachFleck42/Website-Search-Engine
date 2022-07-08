@@ -46,7 +46,7 @@ def initializeDb(tableName):
     Closes connection afterwards and returns nothing.
     '''
     # Connect to PostgresSQL database and get a cursor
-    conn = psycopg2.connect(host='postgres', database='postgres', user='postgres', password='postgres')
+    conn = psycopg2.connect(host='postgres', database='searchEngineDb', user='postgres', password='postgres')
     cur = conn.cursor()
 
     # If a table already exists for the website, delete it
@@ -64,7 +64,7 @@ def initializeDb(tableName):
     conn.close()
 
 
-def getLinks(pageResponse):
+def getLinks(pageResponse, parsedPage):
     '''
     Accepts a webpage in the form of a 'response object' from the Requests package.
     Returns a list of cleaned links (as strings) discovered on that webpage.
@@ -73,7 +73,6 @@ def getLinks(pageResponse):
         URLs, URLs currently in the queue, and links to different domains are also removed.
     '''
     webpageURL = pageResponse.url
-    parsedPage = BeautifulSoup(pageResponse.text, 'html.parser')
 
     # Find all valid links (not NoneType) from the <a> tags on the webpage
     links = []
@@ -146,7 +145,7 @@ if __name__ == "__main__":
         
     # Connect to a SQL database and create a table for the domain
     tableName = (urlparse(INITIAL_URL).hostname).split('.', 1)[0]
-    conn = psycopg2.connect(host='postgres', database='postgres', user='postgres', password='postgres')
+    conn = psycopg2.connect(host='app', database='postgres', user='postgres', password='postgres')
     cur = conn.cursor()
 
     # If a table already exists for the domain, delete it
@@ -182,7 +181,7 @@ if __name__ == "__main__":
             print("--------------------")
             continue
         else:
-            print("Connected successfully. ", end='')
+            print("Connected successfully. ")
             
         # Collect data from webpage
         parsedPage = BeautifulSoup(pageResponse.text, 'html.parser')
@@ -191,7 +190,7 @@ if __name__ == "__main__":
         
         # Append data to database
         cur.execute(
-            sql.SQL("INSERT INTO {} VALUES (%s, %s)")
+            sql.SQL("INSERT INTO {} VALUES (%s, %s, %s)")
             .format(sql.Identifier(tableName)),
             [pageURL, pageTitle, pageText])
 
@@ -199,7 +198,7 @@ if __name__ == "__main__":
         # in the page's <a> tags. Links will be 'cleaned' (see function docstring)
         if url[1] < MAX_DEPTH:
             print("Finding links on page...")
-            pageLinks = getLinks(pageResponse)
+            pageLinks = getLinks(pageResponse, parsedPage)
             for link in pageLinks:
                 urls.append((link, url[1] + 1))
             print("Links appended to queue: ")
@@ -215,5 +214,5 @@ if __name__ == "__main__":
     # Print results to the console
     print("All URLs visited!")
     print("--------------------")
-    print(f"Total number of webpages analyzed: {webpageVisitCount}")
+    print(f"Total number of webpages visited: {webpageVisitCount}")
     print(f"Program took {(time.time() - startTime):.2f} seconds to run.")
