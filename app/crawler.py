@@ -213,6 +213,8 @@ if __name__ == "__main__":
 
     while True:
         userInput = input("What would you like to search?: ")
+        if userInput.lower() == "exit":
+            sys.exit()
         startTime2 = time.time()
         
         conn = psycopg2.connect(host='app', database='searchenginedb', user='postgres', password='postgres')
@@ -231,5 +233,5 @@ if __name__ == "__main__":
         for thing in searchResultsSorted:
             print(thing)
         
-        print(f'Program took {(time.time() - startTime2):.2f} seconds to search for "{userInput}"')
+        print(f'Program took {(time.time() - startTime2):.4f} seconds to search for "{userInput}"')
         
