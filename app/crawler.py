@@ -105,37 +105,7 @@ def getLinks(pageURL, parsedPage):
     # Remove any duplicate links in the list and return
     return list(set(linksClean))
     
-
-if __name__ == "__main__":
-    # Check for valid number of arguments (2) in the script call.
-    if (len(sys.argv) != 3):
-        print("FATAL ERROR: Improper number of arguments. "
-              "Please call program as: 'python app.py <URL> <MAX_DEPTH>")
-        sys.exit()
-    else:
-        startTime = time.time()         # Start timing how long program takes to run
-        urls.append((INITIAL_URL, 0))   # Initial URL has a depth of 0
-        pageHost = (urlparse(INITIAL_URL).hostname).lower()
-        
-    # Connect to a SQL database and create a table for the domain
-    if pageHost[0:4] == "www.":
-        tableName = pageHost[4:].split('.', 1)[0]
-    else:
-        tableName = pageHost.split('.', 1)[0]
-    
-    conn = psycopg2.connect(host='app', database='postgres', user='postgres', password='postgres')
-    cur = conn.cursor()
-
-    # If a table already exists for the domain, delete it
-    if tableExists(conn, tableName):
-        cur.execute(sql.SQL("DROP TABLE {}")
-                    .format(sql.Identifier(tableName)))
-
-    # Create a new table for the website
-    cur.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR)")
-                .format(sql.Identifier(tableName)))
-
-    # Initialization is now done; begin processing the queue
+def crawlWebsite(databaseCursor):
     webpageVisitCount = 0
     for url in urls:
         pageURL = url[0]
@@ -167,7 +137,7 @@ if __name__ == "__main__":
         pageText = parsedPage.get_text()
         
         # Append data to database
-        cur.execute(
+        databaseCursor.execute(
             sql.SQL("INSERT INTO {} VALUES (%s, %s, %s)")
             .format(sql.Identifier(tableName)),
             [pageURL, pageTitle, pageText])
@@ -183,6 +153,48 @@ if __name__ == "__main__":
             print(f"{pageLinks}")
 
         print("--------------------")
+    
+    return webpageVisitCount
+    
+
+if __name__ == "__main__":
+    # Check for valid number of arguments (2) in the script call.
+    if (len(sys.argv) != 3):
+        print("FATAL ERROR: Improper number of arguments. "
+              "Please call program as: 'python app.py <URL> <MAX_DEPTH>")
+        sys.exit()
+    else:
+        startTime = time.time()         # Start timing how long program takes to run
+        urls.append((INITIAL_URL, 0))   # Initial URL has a depth of 0
+        pageHost = (urlparse(INITIAL_URL).hostname).lower()
+        
+    # Connect to a SQL database and create a table for the domain
+    if pageHost[0:4] == "www.":
+        tableName = pageHost[4:].split('.', 1)[0]
+    else:
+        tableName = pageHost.split('.', 1)[0]
+    
+    conn = psycopg2.connect(host='app', database='postgres', user='postgres', password='postgres')
+    cur = conn.cursor()
+
+    # If a table already exists for the domain, check in with user
+    if tableExists(conn, tableName):
+        temp = input("Database for domain already exists. Create new one? (y/n): ")
+        if temp.lower() == 'n':
+            pass
+        if temp.lower() == 'y':
+            cur.execute(sql.SQL("DROP TABLE {}")
+                    .format(sql.Identifier(tableName)))
+            cur.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR)")
+                    .format(sql.Identifier(tableName)))
+            
+            pagesVisited = crawlWebsite(cur)
+    else:
+        cur.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR)")
+                    .format(sql.Identifier(tableName)))
+                   
+        pagesVisited = crawlWebsite(cur)
+
 
     # Commit changes to database
     conn.commit()
@@ -191,7 +203,7 @@ if __name__ == "__main__":
 
     # Print results to the console
     print("All URLs visited and data added to database.")
-    print(f"Total number of webpages visited: {webpageVisitCount}")
+    print(f"Total number of webpages visited: {pagesVisited}")
     print(f"Program took {(time.time() - startTime):.2f} seconds to crawl the domain.")
     
     while True:
