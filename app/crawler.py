@@ -89,7 +89,7 @@ def getLinks(pageURL, parsedPage):
         if initialHost != linkHost:
             continue
         
-        # Ignore .pdf pages
+        # Ignore links that end with unwanted extensions
         if link[-4:] == ".pdf":
             continue
         
@@ -159,8 +159,9 @@ def crawlWebsite(databaseCursor):
                 urls.append((link, url[1] + 1))
             print("Links appended to queue: ")
             print(f"{pageLinks}")
+            
+        print("--------------------")
 
-    print("--------------------")
     print("All URLs visited and data added to database.")
     print(f"Total number of webpages visited: {webpageVisitCount}")
     print(f"Program took {(time.time() - startTime):.2f} seconds to crawl the domain.")
