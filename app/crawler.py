@@ -53,9 +53,10 @@ def getLinks(pageURL, parsedPage):
     for link in parsedPage.find_all('a'):
         if (temp := link.get('href')):
             links.append(temp)
-            
+
     # 'Clean' the links (see function docstring)
     linksClean = []
+    initialHost = (urlparse(INITIAL_URL)).hostname
     for index, link in enumerate(links):
         # Ignore any links to the current page
         if link == '/':
@@ -77,13 +78,19 @@ def getLinks(pageURL, parsedPage):
         parsedURL = urlparse(pageURL)
         if link[0] == '/':
             links[index] = parsedURL.scheme + "://" + parsedURL.hostname + link
-        if link[-5:] == ".html":
+        
+        # Expand internal links
+        linkHost = (urlparse(links[index])).hostname
+        if linkHost is None:
             links[index] = parsedURL.scheme + "://" + parsedURL.hostname + parsedURL.path + "/" + link
+            linkHost = parsedURL.hostname
             
         # Ignore links to other domains
-        initialHost = (urlparse(INITIAL_URL)).hostname
-        linkHost = (urlparse(links[index])).hostname
         if initialHost != linkHost:
+            continue
+        
+        # Ignore .pdf pages
+        if link[-4:] == ".pdf":
             continue
         
         # Ignore all links to previously-visited URLs
@@ -106,6 +113,7 @@ def getLinks(pageURL, parsedPage):
     return list(set(linksClean))
     
 def crawlWebsite(databaseCursor):
+    startTime = time.time()         # Start timing how long program takes to run
     webpageVisitCount = 0
     for url in urls:
         pageURL = url[0]
@@ -152,8 +160,11 @@ def crawlWebsite(databaseCursor):
             print("Links appended to queue: ")
             print(f"{pageLinks}")
 
-        print("--------------------")
-    
+    print("--------------------")
+    print("All URLs visited and data added to database.")
+    print(f"Total number of webpages visited: {webpageVisitCount}")
+    print(f"Program took {(time.time() - startTime):.2f} seconds to crawl the domain.")
+        
     return webpageVisitCount
     
 
@@ -164,7 +175,6 @@ if __name__ == "__main__":
               "Please call program as: 'python app.py <URL> <MAX_DEPTH>")
         sys.exit()
     else:
-        startTime = time.time()         # Start timing how long program takes to run
         urls.append((INITIAL_URL, 0))   # Initial URL has a depth of 0
         pageHost = (urlparse(INITIAL_URL).hostname).lower()
         
@@ -174,7 +184,7 @@ if __name__ == "__main__":
     else:
         tableName = pageHost.split('.', 1)[0]
     
-    conn = psycopg2.connect(host='app', database='postgres', user='postgres', password='postgres')
+    conn = psycopg2.connect(host='app', database='searchenginedb', user='postgres', password='postgres')
     cur = conn.cursor()
 
     # If a table already exists for the domain, check in with user
@@ -188,29 +198,23 @@ if __name__ == "__main__":
             cur.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR)")
                     .format(sql.Identifier(tableName)))
             
-            pagesVisited = crawlWebsite(cur)
+            webpageVisitCount = crawlWebsite(cur)
     else:
         cur.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR)")
                     .format(sql.Identifier(tableName)))
                    
-        pagesVisited = crawlWebsite(cur)
-
+        webpageVisitCount = crawlWebsite(cur)
 
     # Commit changes to database
     conn.commit()
     cur.close()
     conn.close()
 
-    # Print results to the console
-    print("All URLs visited and data added to database.")
-    print(f"Total number of webpages visited: {pagesVisited}")
-    print(f"Program took {(time.time() - startTime):.2f} seconds to crawl the domain.")
-    
     while True:
         userInput = input("What would you like to search?: ")
         startTime2 = time.time()
         
-        conn = psycopg2.connect(host='app', database='postgres', user='postgres', password='postgres')
+        conn = psycopg2.connect(host='app', database='searchenginedb', user='postgres', password='postgres')
         cur = conn.cursor()
         cur.execute(sql.SQL("SELECT * FROM {};").format(sql.Identifier(tableName)))
         rows = cur.fetchall()
