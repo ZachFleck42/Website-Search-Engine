@@ -220,12 +220,16 @@ if __name__ == "__main__":
         cur.execute(sql.SQL("SELECT * FROM {};").format(sql.Identifier(tableName)))
         rows = cur.fetchall()
 
-        inputOccurrences = {}
+        searchResults = {}
         for row in rows:
-            inputOccurrences[row[1]] = (row[2].lower()).count((userInput).lower())
+            inputOccurrences = (row[2].lower()).count((userInput).lower())
+            if inputOccurrences > 0:
+                searchResults[row[1]] = inputOccurrences
+                
+        searchResultsSorted = sorted(searchResults.items(), key=lambda x: x[1], reverse=True)
 
-        for name, count in inputOccurrences.items():
-            print(name, count)
+        for thing in searchResultsSorted:
+            print(thing)
         
         print(f'Program took {(time.time() - startTime2):.2f} seconds to search for "{userInput}"')
         
