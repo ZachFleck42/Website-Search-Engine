@@ -40,31 +40,7 @@ def tableExists(DbConnection, tableName):
     return False
 
 
-def initializeDb(tableName):
-    '''
-    Connects to a database and creates a fresh table with the name {tableName}.
-    Closes connection afterwards and returns nothing.
-    '''
-    # Connect to PostgresSQL database and get a cursor
-    conn = psycopg2.connect(host='postgres', database='searchEngineDb', user='postgres', password='postgres')
-    cur = conn.cursor()
-
-    # If a table already exists for the website, delete it
-    if tableExists(conn, tableName):
-        cur.execute(sql.SQL("DROP TABLE {}")
-                    .format(sql.Identifier(tableName)))
-
-    # Create a new table for the website
-    cur.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, face_count INT)")
-                .format(sql.Identifier(tableName)))
-
-    # Commit changes and close the connection
-    conn.commit()
-    cur.close()
-    conn.close()
-
-
-def getLinks(pageResponse, parsedPage):
+def getLinks(pageURL, parsedPage):
     '''
     Accepts a webpage in the form of a 'response object' from the Requests package.
     Returns a list of cleaned links (as strings) discovered on that webpage.
@@ -72,14 +48,12 @@ def getLinks(pageResponse, parsedPage):
         are removed. Internal links are expanded to full URLs. Previously-visited
         URLs, URLs currently in the queue, and links to different domains are also removed.
     '''
-    webpageURL = pageResponse.url
-
     # Find all valid links (not NoneType) from the <a> tags on the webpage
     links = []
     for link in parsedPage.find_all('a'):
         if (temp := link.get('href')):
             links.append(temp)
-
+            
     # 'Clean' the links (see function docstring)
     linksClean = []
     for index, link in enumerate(links):
@@ -100,16 +74,18 @@ def getLinks(pageResponse, parsedPage):
             continue
 
         # Expand internal links
-        parsedURL = urlparse(webpageURL)
+        parsedURL = urlparse(pageURL)
         if link[0] == '/':
             links[index] = parsedURL.scheme + "://" + parsedURL.hostname + link
-
+        if link[-5:] == ".html":
+            links[index] = parsedURL.scheme + "://" + parsedURL.hostname + parsedURL.path + "/" + link
+            
         # Ignore links to other domains
-        initalHost = (urlparse(INITIAL_URL)).hostname
+        initialHost = (urlparse(INITIAL_URL)).hostname
         linkHost = (urlparse(links[index])).hostname
-        if initalHost != linkHost:
+        if initialHost != linkHost:
             continue
-
+        
         # Ignore all links to previously-visited URLs
         if links[index] in visitedLinks:
             continue
@@ -122,9 +98,6 @@ def getLinks(pageResponse, parsedPage):
                 break
         if inQueue:
             continue
-
-        # Remove any dangling '/'s
-        links[index] = links[index].rstrip('/')
 
         # All filters passed; link is appended to 'clean' list
         linksClean.append(links[index])
@@ -140,11 +113,16 @@ if __name__ == "__main__":
               "Please call program as: 'python app.py <URL> <MAX_DEPTH>")
         sys.exit()
     else:
-        urls.append((INITIAL_URL, 0))   # Initial URL has a depth of 0
         startTime = time.time()         # Start timing how long program takes to run
+        urls.append((INITIAL_URL, 0))   # Initial URL has a depth of 0
+        pageHost = (urlparse(INITIAL_URL).hostname).lower()
         
     # Connect to a SQL database and create a table for the domain
-    tableName = (urlparse(INITIAL_URL).hostname).split('.', 1)[0]
+    if pageHost[0:4] == "www.":
+        tableName = pageHost[4:].split('.', 1)[0]
+    else:
+        tableName = pageHost.split('.', 1)[0]
+    
     conn = psycopg2.connect(host='app', database='postgres', user='postgres', password='postgres')
     cur = conn.cursor()
 
@@ -198,7 +176,7 @@ if __name__ == "__main__":
         # in the page's <a> tags. Links will be 'cleaned' (see function docstring)
         if url[1] < MAX_DEPTH:
             print("Finding links on page...")
-            pageLinks = getLinks(pageResponse, parsedPage)
+            pageLinks = getLinks(pageURL, parsedPage)
             for link in pageLinks:
                 urls.append((link, url[1] + 1))
             print("Links appended to queue: ")
@@ -206,13 +184,31 @@ if __name__ == "__main__":
 
         print("--------------------")
 
-    # Commit changes and close connection to database
+    # Commit changes to database
     conn.commit()
     cur.close()
     conn.close()
 
     # Print results to the console
-    print("All URLs visited!")
-    print("--------------------")
+    print("All URLs visited and data added to database.")
     print(f"Total number of webpages visited: {webpageVisitCount}")
-    print(f"Program took {(time.time() - startTime):.2f} seconds to run.")
+    print(f"Program took {(time.time() - startTime):.2f} seconds to crawl the domain.")
+    
+    while True:
+        userInput = input("What would you like to search?: ")
+        startTime2 = time.time()
+        
+        conn = psycopg2.connect(host='app', database='postgres', user='postgres', password='postgres')
+        cur = conn.cursor()
+        cur.execute(sql.SQL("SELECT * FROM {};").format(sql.Identifier(tableName)))
+        rows = cur.fetchall()
+
+        inputOccurrences = {}
+        for row in rows:
+            inputOccurrences[row[1]] = (row[2].lower()).count((userInput).lower())
+
+        for name, count in inputOccurrences.items():
+            print(name, count)
+        
+        print(f'Program took {(time.time() - startTime2):.2f} seconds to search for "{userInput}"')
+        
