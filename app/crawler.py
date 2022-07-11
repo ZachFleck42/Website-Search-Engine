@@ -136,7 +136,7 @@ def crawlWebsite(databaseConnection, tableName):
     Function also calls a seperate data-collection function for each page. 
         Functions are kept seperate for easy modification in other programs.
     '''
-    startTime = time.time()
+    timestampCrawlStart = time.time()
     webpageVisitCount = 0
     for url in urls:
         pageURL = url[0]
@@ -147,7 +147,7 @@ def crawlWebsite(databaseConnection, tableName):
 
         # Use Requests package to obtain a 'Response' object from the webpage,
         # containing page's HTML, connection status, and other useful info.
-        print(f"Attempting to connect to URL: {pageURL}")
+        print(f"Attempting to connect to URL: {pageURL}...")
         pageResponse = requests.get(pageURL, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'})
 
         # Perform error checking on the URL connection.
@@ -156,11 +156,10 @@ def crawlWebsite(databaseConnection, tableName):
         pageStatus = pageResponse.status_code
         if pageStatus != 200:
             print(f"ERROR: {pageURL} could not be accessed (Response code: {pageStatus}")
-            print("Continuing...")
             print("--------------------")
             continue
         else:
-            print("Connected successfully. ")
+            print("Connected successfully. Continuing...")
             parsedPage = BeautifulSoup(pageResponse.text, 'html.parser')
             
         # Collect data from the webpage
@@ -174,15 +173,19 @@ def crawlWebsite(databaseConnection, tableName):
             if pageLinks := getLinks(pageURL, parsedPage):
                 for link in pageLinks:
                     urls.append((link, url[1] + 1))
-                print("Links appended to queue: ")
+                print("Links appended to queue: ", end='')
                 print(f"{pageLinks}")
-            
-        print("--------------------")   # URL done procesing, proceed to next in queue
+            else:
+                print("No unique links found.")
+                
+        # URL done procesing, proceed to next in queue
+        print("URL processed successfully. Continuing...")
+        print("--------------------")   
     
-    # Print useful log info
+    # Print log info
     print("All URLs visited and data added to database.")
     print(f"Total number of webpages visited: {webpageVisitCount}")
-    print(f"Program took {(time.time() - startTime):.2f} seconds to crawl the domain.")
+    print(f"It took {(time.time() - timestampCrawlStart):.2f} seconds to crawl the domain.")
     
     return webpageVisitCount
     
@@ -193,21 +196,20 @@ def runSearch(databaseConnection, userInput):
     Returns a list of search results that take the form:
         (Page's title, # of occurrences of user's input found on page)
     '''
-    startTime2 = time.time()
-    cur = databaseConnection.cursor()
-    
-    cur.execute(sql.SQL("SELECT * FROM {};").format(sql.Identifier(tableName)))
-    rows = cur.fetchall()
-
+    # Read website data into the program and search for occcurrences of user input
     searchResults = {}
+    cursor = databaseConnection.cursor()
+    cursor.execute(sql.SQL("SELECT * FROM {};").format(sql.Identifier(tableName)))
+    rows = cursor.fetchall()
     for row in rows:
         inputOccurrences = (row[2].lower()).count((userInput).lower())
+        # Only append to results if webpage has at least one occurrence of user input
         if inputOccurrences > 0:
             searchResults[row[1]] = inputOccurrences
             
+    # Sort results in decreasing order of occurrences of user input on pages
     searchResultsSorted = sorted(searchResults.items(), key=lambda x: x[1], reverse=True)
-    print(searchResultsSorted)
-    print(f'Program took {(time.time() - startTime2):.4f} seconds to search {urlparse(INITIAL_URL).hostname} "{userInput}"')
+    return(searchResultsSorted)
 
 
 if __name__ == "__main__":
@@ -242,19 +244,32 @@ if __name__ == "__main__":
                     .format(sql.Identifier(tableName)))
             
             # Crawl the website and store data in database
+            print("--------------------")
             webpageVisitCount = crawlWebsite(databaseConnection, tableName)
             databaseConnection.commit()
     else:
         cur.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR);")
                     .format(sql.Identifier(tableName)))
         
+        # Crawl the website and store data in database
+        print("--------------------")
         webpageVisitCount = crawlWebsite(databaseConnection, tableName)
         databaseConnection.commit()
 
+    # Allow user to search for as many terms as they like
     while True:
         print("--------------------")
-        userInput = input("What would you like to search?: ")
+        userInput = input("Enter search term: ")
         if userInput.lower() == "exit":
             sys.exit()
         
-        runSearch(databaseConnection, userInput)
+        print("Searching...")
+        timestampSearchStart = time.time()
+        searchResults = runSearch(databaseConnection, userInput)
+        timestampSearchEnd = time.time()
+        
+        print(f'Results for search of "{userInput}":')
+        for result in searchResults:
+            print(result)
+        
+        print(f"Search took {(timestampSearchEnd - timestampSearchStart):.4f} seconds.")
