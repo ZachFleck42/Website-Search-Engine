@@ -13,9 +13,6 @@ requestHeaders = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Apple
 # Thus, the queue will be a list of tuples in the form (string URL, int Depth)
 urls = []
 
-# Define a 'maximum depth', or how far removed from the main URL the program should explore
-MAX_DEPTH = int(sys.argv[2])
-
 # Create a list of already-visited links to prevent visiting the same page twice
 visitedLinks = []
 
@@ -132,16 +129,22 @@ def collectDataFromPage (databaseConnection, tableName, pageURL, parsedPage):
                 [pageURL, pageTitle, pageText])
                 
     
-def crawlWebsite(databaseConnection, tableName, initialURL):
+def crawlWebsite(databaseConnection, tableName, initialURL, maxDepth):
     '''
     Accepts a database connection and the name of a table within the database.
     Returns a list of webpages visited during the function's call.
     Function also calls a seperate data-collection function for each page. 
         Functions are kept seperate for easy modification in other programs.
     '''
+    # Create a table for the website in the database
+    cursor = databaseConnection.cursor()
+    cursor.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR);")
+                    .format(sql.Identifier(tableName)))
+    
+    # Begin processing the queue
+    webpageVisitCount = 0
     urls.append((initialURL, 0))
     timestampCrawlStart = time.time()
-    webpageVisitCount = 0
     for url in urls:
         pageURL = url[0]
 
@@ -173,7 +176,7 @@ def crawlWebsite(databaseConnection, tableName, initialURL):
 
         # If the current webpage is not at MAX_DEPTH, get a list of links found
         # in the page's <a> tags. Links will be 'cleaned' (see function docstring)
-        if url[1] < MAX_DEPTH:
+        if url[1] < maxDepth:
             print("Finding links on page...")
             if pageLinks := getLinks(pageURL, parsedPage, initialURL):
                 for link in pageLinks:

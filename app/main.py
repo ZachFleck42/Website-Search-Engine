@@ -11,8 +11,6 @@ from utils import tableExists
 # Define database connection parameters and HTML request headers
 databaseConnectionParamaters = {"host": "app", "database": "searchenginedb", "user": "postgres", "password": "postgres"}
 
-# Store the initial URL as a global variable for reference across functions
-INITIAL_URL = (sys.argv[1]).rstrip('/')
 
 def runSearch(databaseConnection, userInput):
     '''
@@ -40,9 +38,12 @@ if __name__ == "__main__":
     # Check that the program was called properly
     if not checkValidUsage():
         sys.exit()
+    else:
+        initialURL = sys.argv[1]
+        maxDepth = int(sys.argv[2])
     
     # Create a name for the SQL database table
-    pageHost = (urlparse(INITIAL_URL).hostname).lower()
+    pageHost = (urlparse(initialURL).hostname).lower()
     if pageHost[0:4] == "www.":
         tableName = pageHost[4:].split('.', 1)[0]
     else:
@@ -61,20 +62,15 @@ if __name__ == "__main__":
             cursor.execute(sql.SQL("DROP TABLE {};")
                     .format(sql.Identifier(tableName)))
             databaseConnection.commit()
-            cursor.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR);")
-                    .format(sql.Identifier(tableName)))
             
             # Crawl the website and store data in database
             print("--------------------")
-            webpageVisitCount = crawlWebsite(databaseConnection, tableName, INITIAL_URL)
+            crawlWebsite(databaseConnection, tableName, initialURL, maxDepth)
             databaseConnection.commit()
     else:
-        cursor.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR);")
-                    .format(sql.Identifier(tableName)))
-        
         # Crawl the website and store data in database
         print("--------------------")
-        webpageVisitCount = crawlWebsite(databaseConnection, tableName, INITIAL_URL)
+        crawlWebsite(databaseConnection, tableName, initialURL, maxDepth)
         databaseConnection.commit()
 
     # Allow user to search for as many terms as they like
