@@ -40,7 +40,7 @@ def checkValidUsage():
     '''
     if (len(sys.argv) != 3):
         print("FATAL ERROR: Improper number of arguments.")
-        print("Please call program as: 'python app.py <URL> <MAX_DEPTH>")
+        print("Please call program as: 'python app.py URL MAX_DEPTH")
         return 0
         
     return 1

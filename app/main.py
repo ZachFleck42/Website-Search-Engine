@@ -28,9 +28,9 @@ if __name__ == "__main__":
     if utils.tableExists(databaseConnection, tableName):
         useExistingDataAnswer = input("Database for domain already exists. Use existing data? (y/n): ")
         print("--------------------")
-        if useExistingDataAnswer.lower() == 'y':         # If using existing data, no need to crawl website
+        if useExistingDataAnswer.lower() == 'y':        # If using existing data, no need to crawl website
             skipDataCollection = 1
-        elif useExistingDataAnswer.lower() == 'n':       # If not using existing data, drop the existing table
+        elif useExistingDataAnswer.lower() == 'n':      # If not using existing data, drop the table
             cursor.execute(sql.SQL("DROP TABLE {};")
                             .format(sql.Identifier(tableName)))
             databaseConnection.commit()
@@ -41,7 +41,6 @@ if __name__ == "__main__":
         webpageVisitCount = crawlWebsite(databaseConnection, tableName, initialURL, maxDepth)
         databaseConnection.commit()
         timestampCrawlerEnd = time.time()
-        
         print("Website successfully crawled and data appended to database.")
         print(f"Total number of webpages visited: {webpageVisitCount}")
         print(f"It took {(timestampCrawlerEnd - timestampCrawlerStart):.2f} seconds to crawl the website.")
@@ -50,8 +49,8 @@ if __name__ == "__main__":
     while True:
         print("--------------------")
         # Get user input for search term. Allow exiting program via 'x' command
-        userInput = input('Enter search term, or enter "x" to exit: ')
-        if userInput.lower() == "x":
+        userInput = input("Enter search term, or enter 'x' to exit: ")
+        if userInput.lower() == 'x':
             sys.exit()
         
         # Search the website for the user's input and record how long the search takes
