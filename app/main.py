@@ -2,36 +2,29 @@ import psycopg2
 import searchEngine
 import sys
 import time
+import utils
 from crawler import crawlWebsite
 from psycopg2 import sql
-from urllib.parse import urlparse
-from utils import checkValidUsage
-from utils import tableExists
 
 # Define database connection parameters and HTML request headers
 databaseConnectionParamaters = {"host": "app", "database": "searchenginedb", "user": "postgres", "password": "postgres"}
 
 if __name__ == "__main__":
     # Check that the program was called properly
-    if not checkValidUsage():
+    if not utils.checkValidUsage():
         sys.exit()
-    else:
-        initialURL = sys.argv[1]
-        maxDepth = int(sys.argv[2])
-    
-    # Create a name for the SQL database table
-    pageHost = (urlparse(initialURL).hostname).lower()
-    if pageHost[0:4] == "www.":
-        tableName = pageHost[4:].split('.', 1)[0]
-    else:
-        tableName = pageHost.split('.', 1)[0]
+        
+    # Initialize important variables from program call
+    initialURL = sys.argv[1]
+    maxDepth = int(sys.argv[2])
     
     # Connect to the database and obtain a cursor
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     cursor = databaseConnection.cursor()
 
     # If a table already exists for the domain, check in with user
-    if tableExists(databaseConnection, tableName):
+    tableName = utils.getTableName(initialURL)
+    if utils.tableExists(databaseConnection, tableName):
         temp = input("Database for domain already exists. Create new one? (y/n): ")
         if temp.lower() == 'n':     # If using existing data, skip right to search
             pass
@@ -53,9 +46,9 @@ if __name__ == "__main__":
     # Allow user to search for as many terms as they like
     while True:
         print("--------------------")
-        # Get user input for search term. Allow exiting program via '/exit' command
-        userInput = input('Enter search term: ')
-        if userInput.lower() == "/exit":
+        # Get user input for search term. Allow exiting program via 'x' command
+        userInput = input('Enter search term, or enter "x" to exit: ')
+        if userInput.lower() == "q":
             sys.exit()
         
         # Search the website for the user's input and record how long the search takes
@@ -63,7 +56,7 @@ if __name__ == "__main__":
         searchResults = searchEngine.countMethod(databaseConnection, tableName, userInput)
         timestampSearchEnd = time.time()
         
-        # Print results
+        # Print search results
         print(f'Top 10 Results for search of "{userInput}":')
         for result in searchResults[0:10]:
             print(result)
