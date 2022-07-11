@@ -74,7 +74,12 @@ def cleanLinks(links, pageURL):
         
         # Wiki-specific rules
         unwantedTags = ["/Category:", "/File:", "/Talk:", "/User", "/Blog:", "/User_blog:", "/Special:", "/Template:", "/Template_talk:", "Wiki_talk:", "/ru/", "/es/", "/ja/", "/de/", "/fi/", "/fr/", "/f/"]
+        unwantedLanguages = ["/es", "/de", "/ja", "/fr", "/zh", "/pl", "/ru", "/nl", "/uk", "/ko", "/it", "/hu", "/sv", "/cs", "/ms", "/da"]
         if any(tag in link for tag in unwantedTags):
+            continue
+        if link[-3:] in unwantedLanguages:
+            continue
+        if link[-6:] == "/pt-br":
             continue
         
         # Delete any queries
@@ -172,7 +177,7 @@ def crawlWebsite(databaseConnection, tableName):
         # program skips to next url in the queue.
         pageStatus = pageResponse.status_code
         if pageStatus != 200:
-            print(f"ERROR: {pageURL} could not be accessed (Response code: {pageStatus}")
+            print(f"ERROR: {pageURL} could not be accessed (Response code: {pageStatus})")
             print("--------------------")
             continue
         else:
@@ -193,6 +198,7 @@ def crawlWebsite(databaseConnection, tableName):
                     urls.append((link, url[1] + 1))
                 print("Links appended to queue: ", end='')
                 print(f"{pageLinks}")
+                print("Continuing...")
             else:
                 print("No unique links found.")
                 
