@@ -1,38 +1,15 @@
 import psycopg2
+import searchEngine
 import sys
 import time
+from crawler import crawlWebsite
 from psycopg2 import sql
 from urllib.parse import urlparse
-
-from crawler import crawlWebsite
 from utils import checkValidUsage
 from utils import tableExists
 
 # Define database connection parameters and HTML request headers
 databaseConnectionParamaters = {"host": "app", "database": "searchenginedb", "user": "postgres", "password": "postgres"}
-
-
-def runSearch(databaseConnection, userInput):
-    '''
-    Accepts user input as a string.
-    Returns a list of search results that take the form:
-        (Page's title, # of occurrences of user's input found on page)
-    '''
-    # Read website data into the program and search for occcurrences of user input
-    searchResults = {}
-    cursor = databaseConnection.cursor()
-    cursor.execute(sql.SQL("SELECT * FROM {};").format(sql.Identifier(tableName)))
-    rows = cursor.fetchall()
-    for row in rows:
-        inputOccurrences = (row[2].lower()).count((userInput).lower())
-        # Only append to results if webpage has at least one occurrence of user input
-        if inputOccurrences > 0:
-            searchResults[row[1]] = inputOccurrences
-            
-    # Sort results in decreasing order of occurrences of user input on pages
-    searchResultsSorted = sorted(searchResults.items(), key=lambda x: x[1], reverse=True)
-    return(searchResultsSorted)
-
 
 if __name__ == "__main__":
     # Check that the program was called properly
@@ -83,7 +60,7 @@ if __name__ == "__main__":
         
         # Search the website for the user's input and record how long the search takes
         timestampSearchStart = time.time()
-        searchResults = runSearch(databaseConnection, userInput)
+        searchResults = searchEngine.countMethod(databaseConnection, tableName, userInput)
         timestampSearchEnd = time.time()
         
         # Print results
