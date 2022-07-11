@@ -113,7 +113,7 @@ def getLinks(pageURL, parsedPage):
     return list(set(linksClean))
     
 def crawlWebsite(databaseCursor):
-    startTime = time.time()         # Start timing how long program takes to run
+    startTime = time.time()
     webpageVisitCount = 0
     for url in urls:
         pageURL = url[0]
@@ -169,6 +169,32 @@ def crawlWebsite(databaseCursor):
     return webpageVisitCount
     
 
+def runSearch(userInput):
+    startTime2 = time.time()
+        
+    conn = psycopg2.connect(host='app', database='searchenginedb', user='postgres', password='postgres')
+    cur = conn.cursor()
+    cur.execute(sql.SQL("SELECT * FROM {};").format(sql.Identifier(tableName)))
+    rows = cur.fetchall()
+
+    searchResults = {}
+    for row in rows:
+        inputOccurrences = (row[2].lower()).count((userInput).lower())
+        if inputOccurrences > 0:
+            searchResults[row[1]] = inputOccurrences
+            
+    searchResultsSorted = sorted(searchResults.items(), key=lambda x: x[1], reverse=True)
+
+    for thing in searchResultsSorted:
+        print(thing)
+    
+    print(f'Program took {(time.time() - startTime2):.4f} seconds to search {urlparse(INITIAL_URL).hostname} "{userInput}"')
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
 if __name__ == "__main__":
     # Check for valid number of arguments (2) in the script call.
     if (len(sys.argv) != 3):
@@ -179,26 +205,28 @@ if __name__ == "__main__":
         urls.append((INITIAL_URL, 0))   # Initial URL has a depth of 0
         pageHost = (urlparse(INITIAL_URL).hostname).lower()
         
-    # Connect to a SQL database and create a table for the domain
+    # Create a name for the SQL database table
     if pageHost[0:4] == "www.":
         tableName = pageHost[4:].split('.', 1)[0]
     else:
         tableName = pageHost.split('.', 1)[0]
     
+    # Connect to the database and obtain a cursor
     conn = psycopg2.connect(host='app', database='searchenginedb', user='postgres', password='postgres')
     cur = conn.cursor()
 
     # If a table already exists for the domain, check in with user
     if tableExists(conn, tableName):
         temp = input("Database for domain already exists. Create new one? (y/n): ")
-        if temp.lower() == 'n':
+        if temp.lower() == 'n':     # If using existing data, skip right to search
             pass
-        if temp.lower() == 'y':
+        if temp.lower() == 'y':     # If re-obtaining data, drop old table
             cur.execute(sql.SQL("DROP TABLE {}")
                     .format(sql.Identifier(tableName)))
             cur.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR)")
                     .format(sql.Identifier(tableName)))
             
+            # Crawl the website and store data in 
             webpageVisitCount = crawlWebsite(cur)
     else:
         cur.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR)")
@@ -206,7 +234,7 @@ if __name__ == "__main__":
                    
         webpageVisitCount = crawlWebsite(cur)
 
-    # Commit changes to database
+    # Commit changes to database and close connection
     conn.commit()
     cur.close()
     conn.close()
@@ -215,23 +243,5 @@ if __name__ == "__main__":
         userInput = input("What would you like to search?: ")
         if userInput.lower() == "exit":
             sys.exit()
-        startTime2 = time.time()
         
-        conn = psycopg2.connect(host='app', database='searchenginedb', user='postgres', password='postgres')
-        cur = conn.cursor()
-        cur.execute(sql.SQL("SELECT * FROM {};").format(sql.Identifier(tableName)))
-        rows = cur.fetchall()
-
-        searchResults = {}
-        for row in rows:
-            inputOccurrences = (row[2].lower()).count((userInput).lower())
-            if inputOccurrences > 0:
-                searchResults[row[1]] = inputOccurrences
-                
-        searchResultsSorted = sorted(searchResults.items(), key=lambda x: x[1], reverse=True)
-
-        for thing in searchResultsSorted:
-            print(thing)
-        
-        print(f'Program took {(time.time() - startTime2):.4f} seconds to search for "{userInput}"')
-        
+        runSearch(userInput)
