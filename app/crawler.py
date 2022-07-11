@@ -6,8 +6,9 @@ from bs4 import BeautifulSoup
 from psycopg2 import sql
 from urllib.parse import urlparse
 
-# Define database connection parameters
+# Define database connection parameters and HTML request headers
 databaseConnectionParamaters = {"host": "app", "database": "searchenginedb", "user": "postgres", "password": "postgres"}
+requestHeaders = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'}
 
 # Create a queue of URLs to visit and collect data from.
 # Each URL will also have a corresponding 'depth', or number of links removed from the original URL.
@@ -148,7 +149,7 @@ def crawlWebsite(databaseConnection, tableName):
         # Use Requests package to obtain a 'Response' object from the webpage,
         # containing page's HTML, connection status, and other useful info.
         print(f"Attempting to connect to URL: {pageURL}...")
-        pageResponse = requests.get(pageURL, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'})
+        pageResponse = requests.get(pageURL, headers=requestHeaders)
 
         # Perform error checking on the URL connection.
         # If webpage can't be properly connected to, an error is raised and
@@ -159,12 +160,13 @@ def crawlWebsite(databaseConnection, tableName):
             print("--------------------")
             continue
         else:
-            print("Connected successfully. Continuing...")
+            print("Connected successfully.")
             parsedPage = BeautifulSoup(pageResponse.text, 'html.parser')
             
         # Collect data from the webpage
         print(f"Collecting data from page...")
         collectDataFromPage(databaseConnection, tableName, pageURL, parsedPage)
+        print("Collected data successfully. Continuing...")
 
         # If the current webpage is not at MAX_DEPTH, get a list of links found
         # in the page's <a> tags. Links will be 'cleaned' (see function docstring)
@@ -179,7 +181,6 @@ def crawlWebsite(databaseConnection, tableName):
                 print("No unique links found.")
                 
         # URL done procesing, proceed to next in queue
-        print("URL processed successfully. Continuing...")
         print("--------------------")   
     
     # Print log info
@@ -263,7 +264,6 @@ if __name__ == "__main__":
         if userInput.lower() == "exit":
             sys.exit()
         
-        print("Searching...")
         timestampSearchStart = time.time()
         searchResults = runSearch(databaseConnection, userInput)
         timestampSearchEnd = time.time()
@@ -272,4 +272,4 @@ if __name__ == "__main__":
         for result in searchResults:
             print(result)
         
-        print(f"Search took {(timestampSearchEnd - timestampSearchStart):.4f} seconds.")
+        print(f"Search took {((timestampSearchEnd - timestampSearchStart) * 1000):.4f} milliseconds.")
