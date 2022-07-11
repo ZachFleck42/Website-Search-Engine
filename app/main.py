@@ -26,11 +26,11 @@ if __name__ == "__main__":
 
     # If a table already exists for the domain, check with user on how to proceed
     if utils.tableExists(databaseConnection, tableName):
-        temp = input("Database for domain already exists. Use existing data? (y/n): ")
+        useExistingDataAnswer = input("Database for domain already exists. Use existing data? (y/n): ")
         print("--------------------")
-        if temp.lower() == 'y':         # If using existing data, no need to crawl website
+        if useExistingDataAnswer.lower() == 'y':         # If using existing data, no need to crawl website
             skipDataCollection = 1
-        elif temp.lower() == 'n':       # If not using existing data, drop the existing table
+        elif useExistingDataAnswer.lower() == 'n':       # If not using existing data, drop the existing table
             cursor.execute(sql.SQL("DROP TABLE {};")
                             .format(sql.Identifier(tableName)))
             databaseConnection.commit()
@@ -39,13 +39,14 @@ if __name__ == "__main__":
     if not skipDataCollection:
         timestampCrawlerStart = time.time()
         webpageVisitCount = crawlWebsite(databaseConnection, tableName, initialURL, maxDepth)
-        timestampCrawlerEnd = time.time()
         databaseConnection.commit()
+        timestampCrawlerEnd = time.time()
+        
         print("Website successfully crawled and data appended to database.")
         print(f"Total number of webpages visited: {webpageVisitCount}")
-        print(f"It took {(timestampCrawlerEnd - timestampCrawlerStart):.2f} seconds to crawl the domain.")
+        print(f"It took {(timestampCrawlerEnd - timestampCrawlerStart):.2f} seconds to crawl the website.")
 
-    # Allow user to search for as many terms as they like
+    # Allow user to search for terms until program terminated
     while True:
         print("--------------------")
         # Get user input for search term. Allow exiting program via 'x' command
