@@ -95,7 +95,6 @@ def cleanLinks(links, pageURL):
         if initialHost != linkHost:
             continue
         
-        
         # Ignore all links to previously-visited URLs
         if links[index] in visitedLinks:
             continue
@@ -127,10 +126,10 @@ def getLinks(pageURL, parsedPage):
         if (link := reference.get('href')):
             links.append(link)
 
+    # Clean the links and return the list
     cleanedLinks = cleanLinks(links, pageURL)
     return cleanedLinks
 
-    
 
 def collectDataFromPage (databaseConnection, tableName, pageURL, parsedPage):
     '''
@@ -278,16 +277,18 @@ if __name__ == "__main__":
     # Allow user to search for as many terms as they like
     while True:
         print("--------------------")
-        userInput = input("Enter search term: ")
-        if userInput.lower() == "exit":
+        # Get user input for search term. Allow exiting program via '/exit' command
+        userInput = input('Enter search term: ')
+        if userInput.lower() == "/exit":
             sys.exit()
         
+        # Search the website for the user's input and record how long the search takes
         timestampSearchStart = time.time()
         searchResults = runSearch(databaseConnection, userInput)
         timestampSearchEnd = time.time()
         
-        print(f'Results for search of "{userInput}":')
-        for result in searchResults:
+        # Print results
+        print(f'Top 10 Results for search of "{userInput}":')
+        for result in searchResults[0:10]:
             print(result)
-        
         print(f"Search took {((timestampSearchEnd - timestampSearchStart) * 1000):.2f} milliseconds.")
