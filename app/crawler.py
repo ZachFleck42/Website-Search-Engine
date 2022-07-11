@@ -73,7 +73,7 @@ def cleanLinks(links, pageURL):
             continue
         
         # Wiki-specific rules
-        unwantedTags = ["/Category:", "/File:", "/Talk:", "/User", "/Blog:", "/User_blog:", "/Special:", "/Template:", "/Template_talk:", "Wiki_talk:", "/ru/", "/es/", "/ja/", "/de/", "/fi/", "/fr/", "/f/"]
+        unwantedTags = ["/Category:", "/File:", "/Talk:", "/User", "/Blog:", "/User_blog:", "/Special:", "/Template:", "/Template_talk:", "Wiki_talk:", "/Help:", "/Source:", "/ru/", "/es/", "/ja/", "/de/", "/fi/", "/fr/", "/f/"]
         unwantedLanguages = ["/es", "/de", "/ja", "/fr", "/zh", "/pl", "/ru", "/nl", "/uk", "/ko", "/it", "/hu", "/sv", "/cs", "/ms", "/da"]
         if any(tag in link for tag in unwantedTags):
             continue
