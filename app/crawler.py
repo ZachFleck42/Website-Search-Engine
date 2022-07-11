@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 from psycopg2 import sql
 from urllib.parse import urlparse
 
+# Define HTML headers
 requestHeaders = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'}
 
 # Create a queue of URLs to visit and collect data from.
@@ -186,7 +187,6 @@ def crawlWebsite(databaseConnection, tableName, initialURL, maxDepth):
                 print("No unique links found.")
                 
         # URL done procesing, proceed to next in queue
-        print(f"Size of queue: {len(urls)}")
         print("--------------------")   
     
     # Print log info

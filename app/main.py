@@ -6,7 +6,7 @@ import utils
 from crawler import crawlWebsite
 from psycopg2 import sql
 
-# Define database connection parameters and HTML request headers
+# Define database connection parameters
 databaseConnectionParamaters = {"host": "app", "database": "searchenginedb", "user": "postgres", "password": "postgres"}
 
 if __name__ == "__main__":
@@ -22,33 +22,34 @@ if __name__ == "__main__":
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     cursor = databaseConnection.cursor()
 
-    # If a table already exists for the domain, check in with user
+    # If a table already exists for the domain, check with user on how to proceed
     tableName = utils.getTableName(initialURL)
+    skipDataCollection = 0
     if utils.tableExists(databaseConnection, tableName):
-        temp = input("Database for domain already exists. Create new one? (y/n): ")
-        if temp.lower() == 'n':     # If using existing data, skip right to search
-            pass
-        if temp.lower() == 'y':     # If re-obtaining data, drop old table
+        temp = input("Database for domain already exists. Use existing data? (y/n): ")
+        if temp.lower() == 'y':
+            skipDataCollection = 1
+        elif temp.lower() == 'n':
             cursor.execute(sql.SQL("DROP TABLE {};")
-                    .format(sql.Identifier(tableName)))
+                            .format(sql.Identifier(tableName)))
             databaseConnection.commit()
             
-            # Crawl the website and store data in database
-            print("--------------------")
-            crawlWebsite(databaseConnection, tableName, initialURL, maxDepth)
-            databaseConnection.commit()
-    else:
-        # Crawl the website and store data in database
-        print("--------------------")
-        crawlWebsite(databaseConnection, tableName, initialURL, maxDepth)
+    # If database table doesn't exist (or was deleted), crawl the website and collect data
+    if not skipDataCollection:
+        timestampCrawlerStart = time.time()
+        webpageVisitCount = crawlWebsite(databaseConnection, tableName, initialURL, maxDepth)
+        timestampCrawlerEnd = time.time()
         databaseConnection.commit()
+        print("Website successfully crawled and data appended to database.")
+        print(f"Total number of webpages visited: {webpageVisitCount}")
+        print(f"It took {(timestampCrawlerEnd - timestampCrawlerStart):.2f} seconds to crawl the domain.")
 
     # Allow user to search for as many terms as they like
     while True:
         print("--------------------")
         # Get user input for search term. Allow exiting program via 'x' command
         userInput = input('Enter search term, or enter "x" to exit: ')
-        if userInput.lower() == "q":
+        if userInput.lower() == "x":
             sys.exit()
         
         # Search the website for the user's input and record how long the search takes
