@@ -60,6 +60,7 @@ def getLinks(pageURL, parsedPage):
     linksClean = []
     initialHost = (urlparse(INITIAL_URL)).hostname
     for index, link in enumerate(links):
+        
         # Ignore any links to the current page
         if link == '/':
             continue
@@ -75,25 +76,35 @@ def getLinks(pageURL, parsedPage):
         # Ignore telephone links
         if link[:4] == "tel:":
             continue
-
+        
+        # Ignore links that end with unwanted extensions
+        unwantedExtensions = ["jpg", "png", "gif", "pdf"]
+        if link.split('.')[-1:][0] in unwantedExtensions:
+            continue
+        
+        # Wiki-specific rules
+        unwantedTags = ["/Category:", "/File:", "/Talk:", "/User", "/User_blog:", "/Special:", "/ru/", "/es/", "/ja/", "/de/", "/fi/", "/fr/", "/f/"]
+        if any(tag in link for tag in unwantedTags):
+            continue
+        
+        # Delete any queries
+        links[index] = links[index].split('?', 1)[0]
+        
         # Expand internal links
         parsedURL = urlparse(pageURL)
-        if link[0] == '/':
-            links[index] = parsedURL.scheme + "://" + parsedURL.hostname + link
-        
+        if links[index][0] == '/':
+            links[index] = parsedURL.scheme + "://" + parsedURL.hostname + links[index]
+            
         # Expand internal links
         linkHost = (urlparse(links[index])).hostname
         if linkHost is None:
-            links[index] = parsedURL.scheme + "://" + parsedURL.hostname + parsedURL.path + "/" + link
+            links[index] = parsedURL.scheme + "://" + parsedURL.hostname + parsedURL.path + "/" + links[index]
             linkHost = parsedURL.hostname
             
         # Ignore links to other domains
         if initialHost != linkHost:
             continue
         
-        # Ignore links that end with unwanted extensions
-        if link[-4:] == ".pdf":
-            continue
         
         # Ignore all links to previously-visited URLs
         if links[index] in visitedLinks:
@@ -231,7 +242,7 @@ if __name__ == "__main__":
     
     # Connect to the database and obtain a cursor
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
-    cur = databaseConnection.cursor()
+    databaseCursor = databaseConnection.cursor()
 
     # If a table already exists for the domain, check in with user
     if tableExists(databaseConnection, tableName):
@@ -239,9 +250,10 @@ if __name__ == "__main__":
         if temp.lower() == 'n':     # If using existing data, skip right to search
             pass
         if temp.lower() == 'y':     # If re-obtaining data, drop old table
-            cur.execute(sql.SQL("DROP TABLE {};")
+            databaseCursor.execute(sql.SQL("DROP TABLE {};")
                     .format(sql.Identifier(tableName)))
-            cur.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR);")
+            databaseConnection.commit()
+            databaseCursor.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR);")
                     .format(sql.Identifier(tableName)))
             
             # Crawl the website and store data in database
@@ -249,7 +261,7 @@ if __name__ == "__main__":
             webpageVisitCount = crawlWebsite(databaseConnection, tableName)
             databaseConnection.commit()
     else:
-        cur.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR);")
+        databaseCursor.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR);")
                     .format(sql.Identifier(tableName)))
         
         # Crawl the website and store data in database
