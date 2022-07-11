@@ -6,6 +6,9 @@ from bs4 import BeautifulSoup
 from psycopg2 import sql
 from urllib.parse import urlparse
 
+# Define database connection parameters
+databaseConnectionParamaters = {"host": "app", "database": "searchenginedb", "user": "postgres", "password": "postgres"}
+
 # Create a queue of URLs to visit and collect data from.
 # Each URL will also have a corresponding 'depth', or number of links removed from the original URL.
 # Thus, the queue will be a list of tuples in the form (string URL, int Depth)
@@ -21,12 +24,12 @@ MAX_DEPTH = int(sys.argv[2])
 visitedLinks = []
 
 
-def tableExists(DbConnection, tableName):
+def tableExists(databaseConnection, tableName):
     '''
     Accepts a database connection and a table name to check.
     If table exists in the databse, function returns True. Returns false otherwise.
     '''
-    cur = DbConnection.cursor()
+    cur = databaseConnection.cursor()
     cur.execute("""
         SELECT COUNT(*)
         FROM information_schema.tables
@@ -112,7 +115,7 @@ def getLinks(pageURL, parsedPage):
     # Remove any duplicate links in the list and return
     return list(set(linksClean))
     
-def crawlWebsite(databaseCursor):
+def crawlWebsite(dbCursor, tableName):
     startTime = time.time()
     webpageVisitCount = 0
     for url in urls:
@@ -139,14 +142,14 @@ def crawlWebsite(databaseCursor):
         else:
             print("Connected successfully. ")
             
-        # Collect data from webpage
+        # Collect data from the webpage
         parsedPage = BeautifulSoup(pageResponse.text, 'html.parser')
         pageTitle = parsedPage.title.string
         pageText = parsedPage.get_text()
         
-        # Append data to database
-        databaseCursor.execute(
-            sql.SQL("INSERT INTO {} VALUES (%s, %s, %s)")
+        # Append data to the database
+        dbCursor.execute(
+            sql.SQL("INSERT INTO {} VALUES (%s, %s, %s);")
             .format(sql.Identifier(tableName)),
             [pageURL, pageTitle, pageText])
 
@@ -154,24 +157,29 @@ def crawlWebsite(databaseCursor):
         # in the page's <a> tags. Links will be 'cleaned' (see function docstring)
         if url[1] < MAX_DEPTH:
             print("Finding links on page...")
-            pageLinks = getLinks(pageURL, parsedPage)
-            for link in pageLinks:
-                urls.append((link, url[1] + 1))
-            print("Links appended to queue: ")
-            print(f"{pageLinks}")
+            if pageLinks := getLinks(pageURL, parsedPage):
+                for link in pageLinks:
+                    urls.append((link, url[1] + 1))
+                print("Links appended to queue: ")
+                print(f"{pageLinks}")
             
-        print("--------------------")
-
+        print("--------------------")   # URL done procesing, proceed to next in queue
+    
+    # Print useful log info
     print("All URLs visited and data added to database.")
     print(f"Total number of webpages visited: {webpageVisitCount}")
     print(f"Program took {(time.time() - startTime):.2f} seconds to crawl the domain.")
-        
+    
     return webpageVisitCount
     
 
 def runSearch(userInput):
+    '''
+    Accepts user input as a string.
+    Returns a list of search results that take the form:
+        (Page's title, # of occurrences of user's input found on page)
+    '''
     startTime2 = time.time()
-        
     conn = psycopg2.connect(host='app', database='searchenginedb', user='postgres', password='postgres')
     cur = conn.cursor()
     cur.execute(sql.SQL("SELECT * FROM {};").format(sql.Identifier(tableName)))
@@ -184,15 +192,8 @@ def runSearch(userInput):
             searchResults[row[1]] = inputOccurrences
             
     searchResultsSorted = sorted(searchResults.items(), key=lambda x: x[1], reverse=True)
-
-    for thing in searchResultsSorted:
-        print(thing)
-    
+    print(searchResultsSorted)
     print(f'Program took {(time.time() - startTime2):.4f} seconds to search {urlparse(INITIAL_URL).hostname} "{userInput}"')
-    
-    conn.commit()
-    cur.close()
-    conn.close()
 
 
 if __name__ == "__main__":
@@ -212,7 +213,7 @@ if __name__ == "__main__":
         tableName = pageHost.split('.', 1)[0]
     
     # Connect to the database and obtain a cursor
-    conn = psycopg2.connect(host='app', database='searchenginedb', user='postgres', password='postgres')
+    conn = psycopg2.connect(**databaseConnectionParamaters)
     cur = conn.cursor()
 
     # If a table already exists for the domain, check in with user
@@ -221,25 +222,25 @@ if __name__ == "__main__":
         if temp.lower() == 'n':     # If using existing data, skip right to search
             pass
         if temp.lower() == 'y':     # If re-obtaining data, drop old table
-            cur.execute(sql.SQL("DROP TABLE {}")
+            cur.execute(sql.SQL("DROP TABLE {};")
                     .format(sql.Identifier(tableName)))
-            cur.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR)")
+            cur.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR);")
                     .format(sql.Identifier(tableName)))
             
-            # Crawl the website and store data in 
-            webpageVisitCount = crawlWebsite(cur)
+            # Crawl the website and store data in database
+            webpageVisitCount = crawlWebsite(cur, tableName)
     else:
-        cur.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR)")
+        cur.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR);")
                     .format(sql.Identifier(tableName)))
-                   
-        webpageVisitCount = crawlWebsite(cur)
-
-    # Commit changes to database and close connection
-    conn.commit()
-    cur.close()
-    conn.close()
+        
+        webpageVisitCount = crawlWebsite(cur, tableName)
+        
+        conn.commit()
+        cur.close()
+        conn.close()
 
     while True:
+        print("--------------------")
         userInput = input("What would you like to search?: ")
         if userInput.lower() == "exit":
             sys.exit()
