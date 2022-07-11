@@ -29,17 +29,15 @@ def tableExists(databaseConnection, tableName):
     Accepts a database connection and a table name to check.
     If table exists in the databse, function returns True. Returns false otherwise.
     '''
-    cur = databaseConnection.cursor()
-    cur.execute("""
+    cursor = databaseConnection.cursor()
+    cursor.execute("""
         SELECT COUNT(*)
         FROM information_schema.tables
         WHERE table_name = '{0}'
         """.format(tableName.replace('\'', '\'\'')))
-    if cur.fetchone()[0] == 1:
-        cur.close()
+    if cursor.fetchone()[0] == 1:
         return True
 
-    cur.close()
     return False
 
 
@@ -112,10 +110,32 @@ def getLinks(pageURL, parsedPage):
         # All filters passed; link is appended to 'clean' list
         linksClean.append(links[index])
 
-    # Remove any duplicate links in the list and return
+    # Remove any duplicate links in the list and return it
     return list(set(linksClean))
     
+
+def collectDataFromPage (databaseConnection, tableName, pageURL, parsedPage):
+    '''
+    Accepts a database connection, the name of a table within that database, the
+        URL of a webpage, and the parsed webpage object from BeautifulSoup
+    Appends specified data the database. Returns nothing.
+    '''
+    pageTitle = parsedPage.title.string
+    pageText = parsedPage.get_text()
+    
+    cursor = databaseConnection.cursor()
+    cursor.execute(sql.SQL("INSERT INTO {} VALUES (%s, %s, %s);")
+                .format(sql.Identifier(tableName)),
+                [pageURL, pageTitle, pageText])
+                
+    
 def crawlWebsite(databaseConnection, tableName):
+    '''
+    Accepts a database connection and the name of a table within the database.
+    Returns a list of webpages visited during the function's call.
+    Function also calls a seperate data-collection function for each page. 
+        Functions are kept seperate for easy modification in other programs.
+    '''
     startTime = time.time()
     webpageVisitCount = 0
     for url in urls:
@@ -141,18 +161,11 @@ def crawlWebsite(databaseConnection, tableName):
             continue
         else:
             print("Connected successfully. ")
+            parsedPage = BeautifulSoup(pageResponse.text, 'html.parser')
             
         # Collect data from the webpage
-        parsedPage = BeautifulSoup(pageResponse.text, 'html.parser')
-        pageTitle = parsedPage.title.string
-        pageText = parsedPage.get_text()
-        
-        # Append data to the database
-        cur = databaseConnection.cursor()
-        cur.execute(
-            sql.SQL("INSERT INTO {} VALUES (%s, %s, %s);")
-            .format(sql.Identifier(tableName)),
-            [pageURL, pageTitle, pageText])
+        print(f"Collecting data from page...")
+        collectDataFromPage(databaseConnection, tableName, pageURL, parsedPage)
 
         # If the current webpage is not at MAX_DEPTH, get a list of links found
         # in the page's <a> tags. Links will be 'cleaned' (see function docstring)
