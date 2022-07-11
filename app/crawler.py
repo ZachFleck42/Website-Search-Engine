@@ -42,25 +42,15 @@ def tableExists(databaseConnection, tableName):
     return False
 
 
-def getLinks(pageURL, parsedPage):
+def cleanLinks(links, pageURL):
     '''
-    Accepts a webpage in the form of a 'response object' from the Requests package.
-    Returns a list of cleaned links (as strings) discovered on that webpage.
-    Links are 'cleaned', meaning page anchor, email address, and telephone links
-        are removed. Internal links are expanded to full URLs. Previously-visited
-        URLs, URLs currently in the queue, and links to different domains are also removed.
+    Accepts a list of links and the URL of the page they were found on.
+    Returns the 'cleaned' list of links.
     '''
-    # Find all valid links (not NoneType) from the <a> tags on the webpage
-    links = []
-    for link in parsedPage.find_all('a'):
-        if (temp := link.get('href')):
-            links.append(temp)
-
     # 'Clean' the links (see function docstring)
-    linksClean = []
+    cleanedLinks = []
     initialHost = (urlparse(INITIAL_URL)).hostname
     for index, link in enumerate(links):
-        
         # Ignore any links to the current page
         if link == '/':
             continue
@@ -83,7 +73,7 @@ def getLinks(pageURL, parsedPage):
             continue
         
         # Wiki-specific rules
-        unwantedTags = ["/Category:", "/File:", "/Talk:", "/User", "/User_blog:", "/Special:", "/ru/", "/es/", "/ja/", "/de/", "/fi/", "/fr/", "/f/"]
+        unwantedTags = ["/Category:", "/File:", "/Talk:", "/User", "/Blog:", "/User_blog:", "/Special:", "/Template:", "/Template_talk:", "Wiki_talk:", "/ru/", "/es/", "/ja/", "/de/", "/fi/", "/fr/", "/f/"]
         if any(tag in link for tag in unwantedTags):
             continue
         
@@ -120,10 +110,26 @@ def getLinks(pageURL, parsedPage):
             continue
 
         # All filters passed; link is appended to 'clean' list
-        linksClean.append(links[index])
+        cleanedLinks.append(links[index])
 
     # Remove any duplicate links in the list and return it
-    return list(set(linksClean))
+    return list(set(cleanedLinks))
+
+
+def getLinks(pageURL, parsedPage):
+    '''
+    Accepts a webpage in the form of a 'response object' from the Requests package.
+    Returns a list of cleaned links (as strings) discovered on that webpage.
+    '''
+    # Find all valid links (not NoneType) from the <a> tags on the webpage
+    links = []
+    for reference in parsedPage.find_all('a'):
+        if (link := reference.get('href')):
+            links.append(link)
+
+    cleanedLinks = cleanLinks(links, pageURL)
+    return cleanedLinks
+
     
 
 def collectDataFromPage (databaseConnection, tableName, pageURL, parsedPage):
@@ -284,4 +290,4 @@ if __name__ == "__main__":
         for result in searchResults:
             print(result)
         
-        print(f"Search took {((timestampSearchEnd - timestampSearchStart) * 1000):.4f} milliseconds.")
+        print(f"Search took {((timestampSearchEnd - timestampSearchStart) * 1000):.2f} milliseconds.")
