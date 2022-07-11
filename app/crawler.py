@@ -171,7 +171,7 @@ def crawlWebsite(databaseConnection, tableName, initialURL, maxDepth):
         # Collect data from the webpage
         print(f"Collecting data from page...")
         collectDataFromPage(databaseConnection, tableName, pageURL, parsedPage)
-        print("Collected data successfully. Continuing...")
+        print("Collected data successfully.")
 
         # If the current webpage is not at MAX_DEPTH, get a list of links found
         # in the page's <a> tags. Links will be 'cleaned' (see function docstring)
@@ -182,16 +182,11 @@ def crawlWebsite(databaseConnection, tableName, initialURL, maxDepth):
                     urls.append((link, url[1] + 1))
                 print("Links appended to queue: ", end='')
                 print(f"{pageLinks}")
-                print("Continuing...")
             else:
                 print("No unique links found.")
                 
         # URL done procesing, proceed to next in queue
+        print("Continuing...")
         print("--------------------")   
-    
-    # Print log info
-    print("All URLs visited and data added to database.")
-    print(f"Total number of webpages visited: {webpageVisitCount}")
-    print(f"It took {(time.time() - timestampCrawlStart):.2f} seconds to crawl the domain.")
     
     return webpageVisitCount

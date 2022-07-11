@@ -14,22 +14,23 @@ if __name__ == "__main__":
     if not utils.checkValidUsage():
         sys.exit()
         
-    # Initialize important variables from program call
+    # Initialize important variables
     initialURL = sys.argv[1]
     maxDepth = int(sys.argv[2])
+    tableName = utils.getTableName(initialURL)
+    skipDataCollection = 0
     
     # Connect to the database and obtain a cursor
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     cursor = databaseConnection.cursor()
 
     # If a table already exists for the domain, check with user on how to proceed
-    tableName = utils.getTableName(initialURL)
-    skipDataCollection = 0
     if utils.tableExists(databaseConnection, tableName):
         temp = input("Database for domain already exists. Use existing data? (y/n): ")
-        if temp.lower() == 'y':
+        print("--------------------")
+        if temp.lower() == 'y':         # If using existing data, no need to crawl website
             skipDataCollection = 1
-        elif temp.lower() == 'n':
+        elif temp.lower() == 'n':       # If not using existing data, drop the existing table
             cursor.execute(sql.SQL("DROP TABLE {};")
                             .format(sql.Identifier(tableName)))
             databaseConnection.commit()
