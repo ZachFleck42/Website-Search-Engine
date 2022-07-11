@@ -115,7 +115,7 @@ def getLinks(pageURL, parsedPage):
     # Remove any duplicate links in the list and return
     return list(set(linksClean))
     
-def crawlWebsite(dbCursor, tableName):
+def crawlWebsite(databaseConnection, tableName):
     startTime = time.time()
     webpageVisitCount = 0
     for url in urls:
@@ -148,7 +148,8 @@ def crawlWebsite(dbCursor, tableName):
         pageText = parsedPage.get_text()
         
         # Append data to the database
-        dbCursor.execute(
+        cur = databaseConnection.cursor()
+        cur.execute(
             sql.SQL("INSERT INTO {} VALUES (%s, %s, %s);")
             .format(sql.Identifier(tableName)),
             [pageURL, pageTitle, pageText])
@@ -173,15 +174,15 @@ def crawlWebsite(dbCursor, tableName):
     return webpageVisitCount
     
 
-def runSearch(userInput):
+def runSearch(databaseConnection, userInput):
     '''
     Accepts user input as a string.
     Returns a list of search results that take the form:
         (Page's title, # of occurrences of user's input found on page)
     '''
     startTime2 = time.time()
-    conn = psycopg2.connect(host='app', database='searchenginedb', user='postgres', password='postgres')
-    cur = conn.cursor()
+    cur = databaseConnection.cursor()
+    
     cur.execute(sql.SQL("SELECT * FROM {};").format(sql.Identifier(tableName)))
     rows = cur.fetchall()
 
@@ -213,11 +214,11 @@ if __name__ == "__main__":
         tableName = pageHost.split('.', 1)[0]
     
     # Connect to the database and obtain a cursor
-    conn = psycopg2.connect(**databaseConnectionParamaters)
-    cur = conn.cursor()
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
+    cur = databaseConnection.cursor()
 
     # If a table already exists for the domain, check in with user
-    if tableExists(conn, tableName):
+    if tableExists(databaseConnection, tableName):
         temp = input("Database for domain already exists. Create new one? (y/n): ")
         if temp.lower() == 'n':     # If using existing data, skip right to search
             pass
@@ -228,16 +229,14 @@ if __name__ == "__main__":
                     .format(sql.Identifier(tableName)))
             
             # Crawl the website and store data in database
-            webpageVisitCount = crawlWebsite(cur, tableName)
+            webpageVisitCount = crawlWebsite(databaseConnection, tableName)
+            databaseConnection.commit()
     else:
         cur.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR);")
                     .format(sql.Identifier(tableName)))
         
-        webpageVisitCount = crawlWebsite(cur, tableName)
-        
-        conn.commit()
-        cur.close()
-        conn.close()
+        webpageVisitCount = crawlWebsite(databaseConnection, tableName)
+        databaseConnection.commit()
 
     while True:
         print("--------------------")
@@ -245,4 +244,4 @@ if __name__ == "__main__":
         if userInput.lower() == "exit":
             sys.exit()
         
-        runSearch(userInput)
+        runSearch(databaseConnection, userInput)
