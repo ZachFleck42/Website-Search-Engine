@@ -1,36 +1,40 @@
 import search_utils as search_utils
 import sys
 import time
-import database_utils as database_utils
 from crawler import crawlWebsite
+from database_utils import getTableName, tableExists, dropTable
 from redis_utils import clearCache
 
 
-if __name__ == "__main__":
-    # Check that the program was called properly
-    if not database_utils.checkValidUsage():
+def checkValidUsage():
+    if (len(sys.argv) != 2):
+        print("FATAL ERROR: Improper number of arguments.")
+        print("Please call program as: 'python app.py URL")
         sys.exit()
         
-    # Initialize important variables
-    initialURL = sys.argv[1]
-    skippingDataCollection = 0
 
+if __name__ == "__main__":
+    # Check that the program was called properly
+    checkValidUsage()
+    initialURL = sys.argv[1]
+        
     # If a table already exists for the domain, check with user on how to proceed
-    tableName = database_utils.getTableName(initialURL)
-    if database_utils.tableExists(tableName):
+    tableName = getTableName(initialURL)
+    skippingDataCollection = 0
+    if tableExists(tableName):
         useExistingDataAnswer = input("Database for domain already exists. Use existing data? (y/n): ")
         print("--------------------")
         if useExistingDataAnswer.lower() == 'y':        # If using existing data, no need to crawl website
             skippingDataCollection = 1
         elif useExistingDataAnswer.lower() == 'n':      # If not using existing data, drop the table
             clearCache()
-            database_utils.dropTable(tableName)
+            dropTable(tableName)
             
     # If database table doesn't exist (or was deleted), crawl the website and collect data
     if not skippingDataCollection:
         webpageVisitCount = crawlWebsite(initialURL, tableName)    
 
-    # Allow user to search for terms until program terminated
+    # Begin searching the website
     while True:
         # Get user input for search term. Allow exiting program via 'x' command
         userInput = input("Enter search term, or enter 'x' to exit: ")
