@@ -1,27 +1,22 @@
 import psycopg2
-import repo
+import redis_utils as redis_utils
 import requests
 from bs4 import BeautifulSoup
 from celery import Celery
 from psycopg2 import sql
-from utils import createTable, getTableName
-from utils import databaseConnectionParamaters
+from database_utils import createTable
+from database_utils import databaseConnectionParamaters
 from urllib.parse import urlparse
 
 app = Celery('Search_Engine', broker='redis://redis:6379/1')
 
 def getHTML(url):
-    print(f"Attempting to connect to URL: {url} ...")
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'}
     pageResponse = requests.get(url, headers=headers)
     pageStatus = pageResponse.status_code
-    
     if pageStatus != 200:
-        print(f"ERROR: {url} could not be accessed (Response code: {pageStatus})")
-        print("--------------------")
         return 0
     else:
-        print("Connected successfully.")
         return pageResponse.text
 
 
@@ -91,6 +86,10 @@ def cleanLinks(links, pageURL):
             links[index] = parsedURL.scheme + "://" + parsedURL.hostname + parsedURL.path + "/" + links[index]
             linkHost = parsedURL.hostname
             
+        # Ensure we are only visiting https:// versions of webpages
+        if urlparse(links[index]).scheme == "http":
+            links[index] = "https" + links[index][4:]
+        
         # Ignore links to other domains
         if initialHost != linkHost:
             continue
@@ -110,60 +109,65 @@ def getLinks(url, parsedPage):
             links.append(link)
 
     # Clean the links and return the list
-    cleanedLinks = cleanLinks(links, url)
+    if links:
+        return cleanLinks(links, url)
     
-    return cleanedLinks
+    return 0
 
 
 def seen(url):
-    return repo.hasBeenVisited(url) or repo.isProcessing(url)
+    return redis_utils.hasBeenVisited(url) or redis_utils.isProcessing(url)
+
+
+def addLinksToQueue(links):
+    for link in links: 
+        if not seen(link):
+            redis_utils.addToQueue(link)
     
 
 @app.task        
 def processURL(url, databaseTable):
-    # Check if URL has already been visited OR queued
-    alreadySeen = seen(url)
-    if alreadySeen:
-        print("URL already visited")
+    print(f"Processing {url} ...")
+    # Check if URL has already been visited or is currently in the queue
+    if seen(url):
+        print(f"ERROR: URL has already been seen! Continuing...")
         return 0
         
     # Mark the URL as currently in the Celery queue
-    repo.markAsProcessing(url)
+    redis_utils.markAsProcessing(url)
     
     # Connect to the URL and get its HTML source
     pageHTML = getHTML(url)
     if not pageHTML:
+        print(f"ERROR: Could not get HTML. Continuing...")
         return 0
     
-    # Parse the webpage with BeautifulSoup
+    # Parse the webpage with BeautifulSoup, scrape data from page, and append to database
     parsedPage = BeautifulSoup(pageHTML, 'html.parser')
-    
-    # Scrape required data from webpage and append to database
     scrapeData(url, parsedPage, databaseTable)
     
-    # Obtain all valid, unvisited links from the webpage and add them to the queue to be visited
+    # Add all valid, unvisited links from the page to the queue
     pageLinks = getLinks(url, parsedPage)
-    for link in pageLinks: 
-        if not seen(link): 
-            print('Add URL to visit queue', link) 
-            repo.addToQueue(link) 
+    if pageLinks:
+        addLinksToQueue(pageLinks)
         
-    repo.moveToVisited(url)
+    # Move URL from processing to visited
+    redis_utils.moveToVisited(url)
     return 1
     
 
 def crawlWebsite(initialURL, databaseTable):
-    repo.addToQueue(initialURL)
+    redis_utils.addToQueue(initialURL)
     createTable(databaseTable)
     
     while True:
-        item = repo.popFromQueue(60)
+        item = redis_utils.popFromQueue(10)
+        print(item)
         if item is None:
-            print("Timeout: No more items to process.")
+            print("Timed out")
             break
     
         url = item[1].decode('utf-8')
-        print(f"Processing URL: {url}")
         processURL.delay(url, databaseTable)
 
-    return repo.getVisitedCount()
+    return redis_utils.getVisitedCount()

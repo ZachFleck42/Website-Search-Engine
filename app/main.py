@@ -1,13 +1,14 @@
-import searchEngine
+import search_utils as search_utils
 import sys
 import time
-import utils
+import database_utils as database_utils
 from crawler import crawlWebsite
+from redis_utils import clearCache
 
 
 if __name__ == "__main__":
     # Check that the program was called properly
-    if not utils.checkValidUsage():
+    if not database_utils.checkValidUsage():
         sys.exit()
         
     # Initialize important variables
@@ -15,14 +16,15 @@ if __name__ == "__main__":
     skippingDataCollection = 0
 
     # If a table already exists for the domain, check with user on how to proceed
-    tableName = utils.getTableName(initialURL)
-    if utils.tableExists(tableName):
+    tableName = database_utils.getTableName(initialURL)
+    if database_utils.tableExists(tableName):
         useExistingDataAnswer = input("Database for domain already exists. Use existing data? (y/n): ")
         print("--------------------")
         if useExistingDataAnswer.lower() == 'y':        # If using existing data, no need to crawl website
             skippingDataCollection = 1
         elif useExistingDataAnswer.lower() == 'n':      # If not using existing data, drop the table
-            utils.dropTable(tableName)
+            clearCache()
+            database_utils.dropTable(tableName)
             
     # If database table doesn't exist (or was deleted), crawl the website and collect data
     if not skippingDataCollection:
@@ -30,7 +32,6 @@ if __name__ == "__main__":
 
     # Allow user to search for terms until program terminated
     while True:
-        print("--------------------")
         # Get user input for search term. Allow exiting program via 'x' command
         userInput = input("Enter search term, or enter 'x' to exit: ")
         if userInput.lower() == 'x':
@@ -38,7 +39,7 @@ if __name__ == "__main__":
         
         # Search the website for the user's input and record how long the search takes
         timestampSearchStart = time.time()
-        searchResults = searchEngine.countMethod(tableName, userInput)
+        searchResults = search_utils.countMethod(tableName, userInput)
         timestampSearchEnd = time.time()
         
         # Print search results

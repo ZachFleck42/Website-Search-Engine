@@ -5,8 +5,6 @@ redisConnection = Redis(host='redis', port=6379)
 toVisitKey = 'crawling:to_visit'
 visitedKey = 'crawling:visited'
 processingKey = 'crawling:queued'
-content_key = 'crawling:content'
-
 
 # Queue of URLs to visit
 def addToQueue(value):
@@ -37,3 +35,8 @@ def isProcessing(value):
 
 def moveToVisited(value):
     redisConnection.smove(processingKey, visitedKey, value)
+    
+
+# Misc
+def clearCache():
+    redisConnection.flushall()

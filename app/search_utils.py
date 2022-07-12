@@ -1,6 +1,6 @@
 import psycopg2
 from psycopg2 import sql
-from utils import databaseConnectionParamaters
+from database_utils import databaseConnectionParamaters
 
 def countMethod(tableName, userInput):    
     '''
