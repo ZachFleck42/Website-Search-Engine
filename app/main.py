@@ -15,25 +15,20 @@ if __name__ == "__main__":
     initialURL = sys.argv[1]
     maxDepth = int(sys.argv[2])
     tableName = utils.getTableName(initialURL)
-    skipDataCollection = 0
+    skippingDataCollection = 0
 
     # If a table already exists for the domain, check with user on how to proceed
     if utils.tableExists(tableName):
         useExistingDataAnswer = input("Database for domain already exists. Use existing data? (y/n): ")
         print("--------------------")
         if useExistingDataAnswer.lower() == 'y':        # If using existing data, no need to crawl website
-            skipDataCollection = 1
+            skippingDataCollection = 1
         elif useExistingDataAnswer.lower() == 'n':      # If not using existing data, drop the table
             utils.dropTable(tableName)
             
     # If database table doesn't exist (or was deleted), crawl the website and collect data
-    if not skipDataCollection:
-        timestampCrawlerStart = time.time()
-        webpageVisitCount = crawlWebsite(initialURL, maxDepth, tableName)
-        timestampCrawlerEnd = time.time()
-        print("Website successfully crawled and data appended to database.")
-        print(f"Total number of webpages visited: {webpageVisitCount}")
-        print(f"It took {(timestampCrawlerEnd - timestampCrawlerStart):.2f} seconds to crawl the website.")
+    if not skippingDataCollection:
+        crawlWebsite(initialURL, tableName)
 
     # Allow user to search for terms until program terminated
     while True:

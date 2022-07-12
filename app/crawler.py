@@ -2,14 +2,14 @@ import psycopg2
 import requests
 from bs4 import BeautifulSoup
 from celery import Celery
+from redis import Redis
+from psycopg2 import sql
 from utils import createTable
 from utils import databaseConnectionParamaters
-from psycopg2 import sql
 from urllib.parse import urlparse
 
-app = Celery('Search_Engine',
-             backend='rpc://',
-             broker='amqp://rabbitmq')
+redisConnection = Redis(db=1) 
+app = Celery('Search_Engine', broker='redis://localhost:6379/1')
              
 def getHTML(url):
     print(f"Attempting to connect to URL: {url} ...")
@@ -116,12 +116,19 @@ def cleanLinks(links, pageURL):
     return list(set(cleanedLinks))
 
 
-def addNewLinksToQueue(links):
-    pass
-
+def seen(url):
+    return redisConnection.sismember('crawling:visited', url) or redisConnection.sismember('crawling:queued', url) 
+    
+    
+def add_to_visit(url): 
+	# LPOS command is not available in Redis library 
+	if redisConnection.execute_command('LPOS', 'crawling:to_visit', url) is None: 
+		redisConnection.rpush('crawling:to_visit', url)
 
 @app.task        
-def crawlWebsite(url):
+def processURL(url):
+    
+    redisConnection.sadd('crawling:queued', url)
     # Connect to the website and get its HTML source
     pageHTML = getHTML(url)
     if not pageHTML:
@@ -131,8 +138,25 @@ def crawlWebsite(url):
     scrapeData(parsedPage)
     pageLinks = getLinks(url, parsedPage)
     
-    addNewLinksToQueue(pageLinks)
+    for link in pageLinks: 
+        if not seen(link): 
+            print('Add URL to visit queue', link) 
+            add_to_visit(link) 
+        
+    redisConnection.smove('crawling:queued', 'crawling:visited', url)
     
     
-def tempName(tableName):
-    pass
+def crawlWebsite(initialURL, tableName):
+    
+    createTable(tableName)
+    redisConnection.rpush('crawling:to_visit', initialURL) 
+
+    while True:
+        item = redisConnection.blpop('crawling:to_visit', 60) 
+        if item is None: 
+            print('Timeout! No more items to process') 
+            break 
+
+        url = item[1].decode('utf-8') 
+        print('Pop URL', url) 
+        processURL.delay(url)
