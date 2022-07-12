@@ -43,9 +43,9 @@ def checkValidUsage():
     Returns 1 if program called properly.
     Prints error message and returns 0 if program called improperly.
     '''
-    if (len(sys.argv) != 3):
+    if (len(sys.argv) != 2):
         print("FATAL ERROR: Improper number of arguments.")
-        print("Please call program as: 'python app.py URL MAX_DEPTH")
+        print("Please call program as: 'python app.py URL")
         return 0
         
     return 1

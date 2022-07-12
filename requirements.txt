@@ -3,4 +3,5 @@ celery
 numpy
 pandas
 psycopg2
+redis
 requests
