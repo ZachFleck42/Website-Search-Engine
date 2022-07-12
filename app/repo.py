@@ -1,6 +1,6 @@
 from redis import Redis
 
-connection = Redis(db=1)
+redisConnection = Redis(host='redis', port=6379)
 
 toVisitKey = 'crawling:to_visit'
 visitedKey = 'crawling:visited'
@@ -10,30 +10,30 @@ content_key = 'crawling:content'
 
 # Queue of URLs to visit
 def addToQueue(value):
-    if connection.execute_command('LPOS', toVisitKey, value) is None:
-        connection.rpush(toVisitKey, value)
+    if redisConnection.execute_command('LPOS', toVisitKey, value) is None:
+        redisConnection.rpush(toVisitKey, value)
 
 def popFromQueue(timeout=0):
-    return connection.blpop(toVisitKey, timeout)
+    return redisConnection.blpop(toVisitKey, timeout)
 
 
 # Already visited URLs
 def addToVisited(value):
-    connection.sadd(visitedKey, value)
+    redisConnection.sadd(visitedKey, value)
 
 def hasBeenVisited(value):
-    return connection.sismember(visitedKey, value)
+    return redisConnection.sismember(visitedKey, value)
     
 def getVisitedCount():
-    return connection.scard(visitedKey)
+    return redisConnection.scard(visitedKey)
 
 
 # Currently being processed by Celery
 def markAsProcessing(value):
-    connection.sadd(processingKey, value)
+    redisConnection.sadd(processingKey, value)
 
 def isProcessing(value):
-    return connection.sismember(processingKey, value)
+    return redisConnection.sismember(processingKey, value)
 
 def moveToVisited(value):
-    connection.smove(processingKey, visitedKey, value)
+    redisConnection.smove(processingKey, visitedKey, value)

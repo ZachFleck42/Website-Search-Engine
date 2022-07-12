@@ -3,15 +3,12 @@ import repo
 import requests
 from bs4 import BeautifulSoup
 from celery import Celery
-from redis import Redis
 from psycopg2 import sql
 from utils import createTable, getTableName
 from utils import databaseConnectionParamaters
 from urllib.parse import urlparse
 
-redisConnection = Redis(db=1) 
-app = Celery('Search_Engine', broker='redis://localhost:6379/1')
-             
+app = Celery('Search_Engine', broker='redis://redis:6379/1')
 
 def getHTML(url):
     print(f"Attempting to connect to URL: {url} ...")
@@ -40,19 +37,6 @@ def scrapeData(url, parsedPage, databaseTable):
     databaseConnection.commit()
     databaseConnection.close()
     
-    
-def getLinks(url, parsedPage):
-    # Find all valid links (not NoneType) from the <a> tags on the webpage
-    links = []
-    for reference in parsedPage.find_all('a'):
-        if (link := reference.get('href')):
-            links.append(link)
-
-    # Clean the links and return the list
-    cleanedLinks = cleanLinks(links, url)
-    
-    return cleanedLinks
-
 
 def cleanLinks(links, pageURL):
     cleanedLinks = []
@@ -118,19 +102,33 @@ def cleanLinks(links, pageURL):
     return list(set(cleanedLinks))
 
 
+def getLinks(url, parsedPage):
+    # Find all valid links (not NoneType) from the <a> tags on the webpage
+    links = []
+    for reference in parsedPage.find_all('a'):
+        if (link := reference.get('href')):
+            links.append(link)
+
+    # Clean the links and return the list
+    cleanedLinks = cleanLinks(links, url)
+    
+    return cleanedLinks
+
+
 def seen(url):
     return repo.hasBeenVisited(url) or repo.isProcessing(url)
     
 
 @app.task        
-def processURL(url):
+def processURL(url, databaseTable):
     # Check if URL has already been visited OR queued
     alreadySeen = seen(url)
     if alreadySeen:
         print("URL already visited")
         return 0
-    else:
-        repo.markAsProcessing(url)
+        
+    # Mark the URL as currently in the Celery queue
+    repo.markAsProcessing(url)
     
     # Connect to the URL and get its HTML source
     pageHTML = getHTML(url)
@@ -141,7 +139,7 @@ def processURL(url):
     parsedPage = BeautifulSoup(pageHTML, 'html.parser')
     
     # Scrape required data from webpage and append to database
-    scrapeData(parsedPage)
+    scrapeData(url, parsedPage, databaseTable)
     
     # Obtain all valid, unvisited links from the webpage and add them to the queue to be visited
     pageLinks = getLinks(url, parsedPage)
@@ -154,10 +152,9 @@ def processURL(url):
     return 1
     
 
-def crawlWebsite(initialURL):
+def crawlWebsite(initialURL, databaseTable):
     repo.addToQueue(initialURL)
-    tableName = getTableName(initialURL)
-    createTable(tableName)
+    createTable(databaseTable)
     
     while True:
         item = repo.popFromQueue(60)
@@ -167,6 +164,6 @@ def crawlWebsite(initialURL):
     
         url = item[1].decode('utf-8')
         print(f"Processing URL: {url}")
-        processURL.delay(url)
+        processURL.delay(url, databaseTable)
 
     return repo.getVisitedCount()

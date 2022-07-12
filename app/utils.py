@@ -3,7 +3,7 @@ import sys
 from psycopg2 import sql
 from urllib.parse import urlparse
 
-databaseConnectionParamaters = {"host": "app", "database": "searchenginedb", "user": "postgres", "password": "postgres"}
+databaseConnectionParamaters = {"host": "app", "database": "searchEngineDb", "user": "postgres", "password": "postgres"}
 
 def tableExists(tableName):
     '''

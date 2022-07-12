@@ -1,16 +1,17 @@
 version: '3.9'
 
 services:
-  rabbitmq:
-    image: rabbitmq:3.10.5
+  redis:
+    image: redis:7.0
     ports:
-      - 5672:5672
-      - 15762:15762
+      - 6379:6379
+    volumes:
+      - cache:/cache
     
   app:
     build: .
     depends_on:
-      - rabbitmq
+      - redis
     environment:
       - POSTGRES_DB=searchEngineDb
       - POSTGRES_USER=postgres
@@ -18,9 +19,10 @@ services:
     ports: 
       - 5432:5432
     volumes: 
-      - database:/var/lib/postgresql/data
+      - database:/data
       - ./app:/app
-    # command: celery -A celery_app worker --loglevel=info
+    # command: celery -A crawler worker --loglevel=info
     
 volumes: 
   database:
+  cache:

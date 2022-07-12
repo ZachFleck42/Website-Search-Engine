@@ -26,7 +26,7 @@ if __name__ == "__main__":
             
     # If database table doesn't exist (or was deleted), crawl the website and collect data
     if not skippingDataCollection:
-            webpageVisitCount = crawlWebsite(initialURL)    
+        webpageVisitCount = crawlWebsite(initialURL, tableName)    
 
     # Allow user to search for terms until program terminated
     while True:
