@@ -1,8 +1,16 @@
 version: '3.9'
 
 services:
+  rabbitmq:
+    image: rabbitmq:3.10.5
+    ports:
+      - 5672:5672
+      - 15762:15762
+    
   app:
     build: .
+    depends_on:
+      - rabbitmq
     environment:
       - POSTGRES_DB=searchEngineDb
       - POSTGRES_USER=postgres
@@ -12,6 +20,7 @@ services:
     volumes: 
       - database:/var/lib/postgresql/data
       - ./app:/app
+    # command: celery -A celery_app worker --loglevel=info
     
 volumes: 
   database:

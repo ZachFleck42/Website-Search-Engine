@@ -1,6 +1,7 @@
 import requests
 import time
 from bs4 import BeautifulSoup
+from celery_app import app
 from psycopg2 import sql
 from urllib.parse import urlparse
 
@@ -47,9 +48,9 @@ def cleanLinks(links, pageURL, initialURL):
         
         # Wiki-specific rules
         unwantedTags = ["/Category:", "/File:", "/Talk:", "/User", "/Blog:", "/User_blog:", "/Special:", "/Template:", 
-                        "/Template_talk:", "Wiki_talk:", "/Help:", "/Source:", "/ru/", "/es/", "/ja/", "/de/", "/fi/", 
-                        "/fr/", "/f/", "/pt-br/", "/uk/", "/he/", "/tr/", "/vi/", "/sv/", "/lt/", "/pl/", "/hu/", "/ko/",
-                        "/da/"]
+                        "/Template_talk:", "Wiki_talk:", "/Help:", "/Source:", "/Forum:", "/Forum_talk:", "/ru/", "/es/", 
+                        "/ja/", "/de/", "/fi/", "/fr/", "/f/", "/pt-br/", "/uk/", "/he/", "/tr/", "/vi/", "/sv/", "/lt/", 
+                        "/pl/", "/hu/", "/ko/", "/da/"]
         unwantedLanguages = ["/es", "/de", "/ja", "/fr", "/zh", "/pl", "/ru", "/nl", "/uk", "/ko", "/it", "/hu", "/sv", 
                             "/cs", "/ms", "/da"]
         if any(tag in link for tag in unwantedTags):
@@ -126,6 +127,54 @@ def collectDataFromPage (databaseConnection, tableName, pageURL, parsedPage):
     cursor.execute(sql.SQL("INSERT INTO {} VALUES (%s, %s, %s);")
                 .format(sql.Identifier(tableName)),
                 [pageURL, pageTitle, pageText])
+        
+                
+@app.task        
+def processURL(databaseConnection, tableName, initialURL, maxDepth, urlTuple):
+    '''
+    To do lol
+    '''
+    pageURL = urlTuple[0]
+    # Append current URL to 'visitedLinks' list to prevent visiting again later
+    visitedLinks.append(pageURL)
+
+    # Use Requests package to obtain a 'Response' object from the webpage,
+    # containing page's HTML, connection status, and other useful info.
+    print(f"Attempting to connect to URL: {pageURL}...")
+    pageResponse = requests.get(pageURL, headers=requestHeaders)
+
+    # Perform error checking on the URL connection.
+    # If webpage can't be properly connected to, an error is raised and
+    # program skips to next url in the queue.
+    pageStatus = pageResponse.status_code
+    if pageStatus != 200:
+        print(f"ERROR: {pageURL} could not be accessed (Response code: {pageStatus})")
+        print("--------------------")
+        return
+    else:
+        print("Connected successfully.")
+        parsedPage = BeautifulSoup(pageResponse.text, 'html.parser')
+        
+    # Collect data from the webpage
+    print(f"Collecting data from page...")
+    collectDataFromPage(databaseConnection, tableName, pageURL, parsedPage)
+    print("Collected data successfully.")
+
+    # If the current webpage is not at MAX_DEPTH, get a list of links found
+    # in the page's <a> tags. Links will be 'cleaned' (see function docstring)
+    if urlTuple[1] < maxDepth:
+        print("Finding links on page...")
+        if pageLinks := getLinks(pageURL, parsedPage, initialURL):
+            for link in pageLinks:
+                urls.append((link, urlTuple[1] + 1))
+            print("Links appended to queue: ", end='')
+            print(f"{pageLinks}")
+        else:
+            print("No unique links found.")
+            
+    # URL done procesing, proceed to next in queue
+    print("Continuing...")
+    print("--------------------")
                 
     
 def crawlWebsite(databaseConnection, tableName, initialURL, maxDepth):
@@ -143,50 +192,8 @@ def crawlWebsite(databaseConnection, tableName, initialURL, maxDepth):
     # Begin processing the queue
     webpageVisitCount = 0
     urls.append((initialURL, 0))
-    timestampCrawlStart = time.time()
     for url in urls:
-        pageURL = url[0]
-
-        # Append current URL to 'visitedLinks' list to prevent visiting again later
-        visitedLinks.append(pageURL)
+        task = processURL.delay(databaseConnection, tableName, initialURL, maxDepth, url)
         webpageVisitCount += 1
-
-        # Use Requests package to obtain a 'Response' object from the webpage,
-        # containing page's HTML, connection status, and other useful info.
-        print(f"Attempting to connect to URL: {pageURL}...")
-        pageResponse = requests.get(pageURL, headers=requestHeaders)
-
-        # Perform error checking on the URL connection.
-        # If webpage can't be properly connected to, an error is raised and
-        # program skips to next url in the queue.
-        pageStatus = pageResponse.status_code
-        if pageStatus != 200:
-            print(f"ERROR: {pageURL} could not be accessed (Response code: {pageStatus})")
-            print("--------------------")
-            continue
-        else:
-            print("Connected successfully.")
-            parsedPage = BeautifulSoup(pageResponse.text, 'html.parser')
-            
-        # Collect data from the webpage
-        print(f"Collecting data from page...")
-        collectDataFromPage(databaseConnection, tableName, pageURL, parsedPage)
-        print("Collected data successfully.")
-
-        # If the current webpage is not at MAX_DEPTH, get a list of links found
-        # in the page's <a> tags. Links will be 'cleaned' (see function docstring)
-        if url[1] < maxDepth:
-            print("Finding links on page...")
-            if pageLinks := getLinks(pageURL, parsedPage, initialURL):
-                for link in pageLinks:
-                    urls.append((link, url[1] + 1))
-                print("Links appended to queue: ", end='')
-                print(f"{pageLinks}")
-            else:
-                print("No unique links found.")
-                
-        # URL done procesing, proceed to next in queue
-        print("Continuing...")
-        print("--------------------")   
     
     return webpageVisitCount

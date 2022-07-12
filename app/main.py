@@ -33,7 +33,6 @@ if __name__ == "__main__":
         elif useExistingDataAnswer.lower() == 'n':      # If not using existing data, drop the table
             cursor.execute(sql.SQL("DROP TABLE {};")
                             .format(sql.Identifier(tableName)))
-            databaseConnection.commit()
             
     # If database table doesn't exist (or was deleted), crawl the website and collect data
     if not skipDataCollection:
