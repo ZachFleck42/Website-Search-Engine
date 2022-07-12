@@ -46,6 +46,7 @@ def tableExists(tableName):
 def getTableName(url):
     '''
     Returns the name of an SQL table for a website based on its URL.
+    Name attempts to take the form of the website's hostname.
     '''
     pageHost = (urlparse(url).hostname).lower()
     if pageHost[0:4] == "www.":
@@ -55,9 +56,21 @@ def getTableName(url):
     
     
 def appendData(url, pageTitle, pageText, tableName):
+    '''
+    Appends specified data to the database.
+    '''
     cursor = databaseConnection.cursor()
     cursor.execute(sql.SQL("INSERT INTO {} VALUES (%s, %s, %s);")
         .format(sql.Identifier(tableName)),
         [url, pageTitle, pageText])
     databaseConnection.commit()
-    databaseConnection.close()
+    
+
+def fetchAllData(tableName):
+    '''
+    Returns all rows of data found in table with name {tableName} in database.
+    '''
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
+    databaseCursor = databaseConnection.cursor()
+    databaseCursor.execute(sql.SQL("SELECT * FROM {};").format(sql.Identifier(tableName)))
+    return databaseCursor.fetchall()

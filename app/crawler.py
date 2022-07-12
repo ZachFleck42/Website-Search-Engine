@@ -1,9 +1,8 @@
-import redis_utils as redis_utils
+import redis_utils
 import requests
 from bs4 import BeautifulSoup
 from celery import Celery
-from database_utils import createTable
-from database_utils import appendData
+from database_utils import appendData, createTable
 from urllib.parse import urlparse
 
 app = Celery('Search_Engine', broker='redis://redis:6379/1')

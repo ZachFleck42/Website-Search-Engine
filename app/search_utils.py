@@ -1,6 +1,4 @@
-import psycopg2
-from psycopg2 import sql
-from database_utils import databaseConnectionParamaters
+from database_utils import fetchAllData
 
 def countMethod(tableName, userInput):    
     '''
@@ -9,15 +7,13 @@ def countMethod(tableName, userInput):
         (Page's title, # of occurrences of user's input found on page)
     Uses Python's standard library count() method from the string object as the 
         search 'algorithm'.
-    Serves as a benchmark to compare against more sophisticated algorithms.
+    Serves as a benchmark to compare against other algorithms.
     '''
-    # Read website data into the program and search for occcurrences of user input
-    searchResults = {}
-    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
-    databaseCursor = databaseConnection.cursor()
-    databaseCursor.execute(sql.SQL("SELECT * FROM {};").format(sql.Identifier(tableName)))
-    rows = databaseCursor.fetchall()
+    # Read website data into the program from database
+    rows = fetchAllData(tableName)
     
+    # Store the search results in a dictionary
+    searchResults = {}
     for row in rows:
         # Only append to results if webpage has at least one occurrence of user input
         if inputOccurrences := (row[2].lower()).count((userInput).lower()):

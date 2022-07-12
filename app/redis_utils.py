@@ -7,36 +7,45 @@ visitedKey = 'crawling:visited'
 processingKey = 'crawling:queued'
 
 # Queue of URLs to visit
-def addToQueue(value):
-    if redisConnection.execute_command('LPOS', toVisitKey, value) is None:
-        redisConnection.rpush(toVisitKey, value)
+def addToQueue(url):
+    '''Add url to queue of URLs to be visited'''
+    if redisConnection.execute_command('LPOS', toVisitKey, url) is None:
+        redisConnection.rpush(toVisitKey, url)
 
 def popFromQueue(timeout=0):
+    '''Pop first-in URL from the queue of URLs to be visited'''
     return redisConnection.blpop(toVisitKey, timeout)
 
 
 # Already visited URLs
-def addToVisited(value):
-    redisConnection.sadd(visitedKey, value)
+def addToVisited(url):
+    '''Append URL to list of already-visited URLs'''
+    redisConnection.sadd(visitedKey, url)
 
-def hasBeenVisited(value):
-    return redisConnection.sismember(visitedKey, value)
+def hasBeenVisited(url):
+    """Checks if URL has already been visited"""
+    return redisConnection.sismember(visitedKey, url)
     
 def getVisitedCount():
+    '''Gets the number of URLs already visited by program'''
     return redisConnection.scard(visitedKey)
 
 
 # Currently being processed by Celery
-def markAsProcessing(value):
-    redisConnection.sadd(processingKey, value)
+def markAsProcessing(url):
+    '''Mark the URL as having been sent to Celery for processing'''
+    redisConnection.sadd(processingKey, url)
 
-def isProcessing(value):
-    return redisConnection.sismember(processingKey, value)
+def isProcessing(url):
+    '''Checks if URL has been sent to Celery for processing'''
+    return redisConnection.sismember(processingKey, url)
 
-def moveToVisited(value):
-    redisConnection.smove(processingKey, visitedKey, value)
+def moveToVisited(url):
+    '''Moves URL from processing to visited'''
+    redisConnection.smove(processingKey, visitedKey, url)
     
 
 # Misc
 def clearCache():
+    '''Clears the Redis database for re-crawling a website'''
     redisConnection.flushall()

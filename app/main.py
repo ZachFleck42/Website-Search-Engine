@@ -1,4 +1,4 @@
-import search_utils as search_utils
+import search_utils
 import sys
 import time
 from crawler import crawlWebsite
@@ -7,6 +7,7 @@ from redis_utils import clearCache
 
 
 def checkValidUsage():
+    '''Checks to make sure program was called properly. Exits if not.'''
     if (len(sys.argv) != 2):
         print("FATAL ERROR: Improper number of arguments.")
         print("Please call program as: 'python app.py URL")
