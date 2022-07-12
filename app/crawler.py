@@ -8,30 +8,44 @@ from urllib.parse import urlparse
 
 app = Celery('Search_Engine', broker='redis://redis:6379/1')
 
+
 def crawlWebsite(initialURL, databaseTable):
+    '''
+    Parent function for connecting to and scraping/storing data from an entire website.
+    '''
+    # Add the initial URL to the queue
     redis_utils.addToQueue(initialURL)
+    
+    # Create a table in the database for the website
     createTable(databaseTable)
     
+    # While there are still links in the queue...
+    timeoutTimer = 5
     while True:
-        item = redis_utils.popFromQueue(10)
-        print(item)
+        # Pop a URL from the queue
+        item = redis_utils.popFromQueue(timeoutTimer)
+        
+        # If the timeout timer is met, stop crawling.
         if item is None:
             print("Timed out")
             break
     
+        # If a URL was found in queue, send it to Celery for processing.
         url = item[1].decode('utf-8')
+        print(url)
         processURL.delay(url, databaseTable)
 
+    # Return the total number of webpages visited
     return redis_utils.getVisitedCount()
     
     
 @app.task        
 def processURL(url, databaseTable):
     '''
-    Parent function for connecting to and scraping data from an individual webpage.
+    Parent function for connecting to and scraping/storing data from an individual webpage.
     '''
-    print(f"Processing {url} ...")
     # Check if URL has already been visited or is currently in the queue
+    print(f"Processing {url} ...")
     if seen(url):
         print(f"ERROR: URL has already been seen! Continuing...")
         return 0
@@ -60,11 +74,16 @@ def processURL(url, databaseTable):
     
     
 def seen(url):
-    '''Check to see if a URL has been seen by the program before'''
+    '''
+    Checks to see if a URL has been seen by the program before.
+    '''
     return redis_utils.hasBeenVisited(url) or redis_utils.isProcessing(url)
 
 
 def getHTML(url):
+    '''
+    Connects to a URL, obtains a response, and returns the webpage's HTML if available.
+    '''
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'}
     pageResponse = requests.get(url, headers=headers)
     pageStatus = pageResponse.status_code
@@ -75,6 +94,9 @@ def getHTML(url):
 
 
 def scrapeData(parsedPage):
+    ''''
+    Pulls and returns data from a parsed webpage.
+    '''
     pageTitle = parsedPage.title.string
     pageText = parsedPage.get_text()
     
@@ -82,6 +104,11 @@ def scrapeData(parsedPage):
     
 
 def getLinks(url, parsedPage):
+    '''
+    Gets a list of "raw" links found on the passed-in webpage.
+    Passes any links to the cleanLinks function for cleaning.
+    Returns the list of cleaned links.
+    '''
     # Find all valid links (not NoneType) from the <a> tags on the webpage
     links = []
     for reference in parsedPage.find_all('a'):
@@ -96,8 +123,11 @@ def getLinks(url, parsedPage):
 
 
 def cleanLinks(links, pageURL):
+    '''
+    Takes a list of 'raw' links and passes them through a series of filters.
+    Any links remaining are returned as 'cleaned' links.
+    '''
     cleanedLinks = []
-    initialHost = (urlparse(pageURL)).hostname
     for index, link in enumerate(links):
         # Ignore any links to the current page
         if link == '/':
@@ -137,13 +167,12 @@ def cleanLinks(links, pageURL):
         # Delete any queries
         links[index] = links[index].split('?', 1)[0]
         
-        # Expand internal links
+        # ! Expand internal links
         parsedURL = urlparse(pageURL)
+        linkHost = (urlparse(links[index])).hostname
         if links[index][0] == '/':
             links[index] = parsedURL.scheme + "://" + parsedURL.hostname + links[index]
             
-        # Expand internal links
-        linkHost = (urlparse(links[index])).hostname
         if linkHost is None:
             links[index] = parsedURL.scheme + "://" + parsedURL.hostname + parsedURL.path + "/" + links[index]
             linkHost = parsedURL.hostname
@@ -153,6 +182,7 @@ def cleanLinks(links, pageURL):
             links[index] = "https" + links[index][4:]
         
         # Ignore links to other domains
+        initialHost = parsedURL.hostname
         if initialHost != linkHost:
             continue
 
@@ -164,6 +194,10 @@ def cleanLinks(links, pageURL):
 
 
 def addLinksToQueue(links):
+    '''
+    Adds one or more links to the queue of links to be visited.
+    Does not queue already 'seen' links.
+    '''
     for link in links: 
         if not seen(link):
             redis_utils.addToQueue(link)
