@@ -1,16 +1,18 @@
 import psycopg2
+import repo
 import requests
 from bs4 import BeautifulSoup
 from celery import Celery
 from redis import Redis
 from psycopg2 import sql
-from utils import createTable
+from utils import createTable, getTableName
 from utils import databaseConnectionParamaters
 from urllib.parse import urlparse
 
 redisConnection = Redis(db=1) 
 app = Celery('Search_Engine', broker='redis://localhost:6379/1')
              
+
 def getHTML(url):
     print(f"Attempting to connect to URL: {url} ...")
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'}
@@ -117,46 +119,54 @@ def cleanLinks(links, pageURL):
 
 
 def seen(url):
-    return redisConnection.sismember('crawling:visited', url) or redisConnection.sismember('crawling:queued', url) 
+    return repo.hasBeenVisited(url) or repo.isProcessing(url)
     
-    
-def add_to_visit(url): 
-	# LPOS command is not available in Redis library 
-	if redisConnection.execute_command('LPOS', 'crawling:to_visit', url) is None: 
-		redisConnection.rpush('crawling:to_visit', url)
 
 @app.task        
 def processURL(url):
+    # Check if URL has already been visited OR queued
+    alreadySeen = seen(url)
+    if alreadySeen:
+        print("URL already visited")
+        return 0
+    else:
+        repo.markAsProcessing(url)
     
-    redisConnection.sadd('crawling:queued', url)
-    # Connect to the website and get its HTML source
+    # Connect to the URL and get its HTML source
     pageHTML = getHTML(url)
     if not pageHTML:
-        pass
+        return 0
     
+    # Parse the webpage with BeautifulSoup
     parsedPage = BeautifulSoup(pageHTML, 'html.parser')
-    scrapeData(parsedPage)
-    pageLinks = getLinks(url, parsedPage)
     
+    # Scrape required data from webpage and append to database
+    scrapeData(parsedPage)
+    
+    # Obtain all valid, unvisited links from the webpage and add them to the queue to be visited
+    pageLinks = getLinks(url, parsedPage)
     for link in pageLinks: 
         if not seen(link): 
             print('Add URL to visit queue', link) 
-            add_to_visit(link) 
+            repo.addToQueue(link) 
         
-    redisConnection.smove('crawling:queued', 'crawling:visited', url)
+    repo.moveToVisited(url)
+    return 1
     
-    
-def crawlWebsite(initialURL, tableName):
-    
+
+def crawlWebsite(initialURL):
+    repo.addToQueue(initialURL)
+    tableName = getTableName(initialURL)
     createTable(tableName)
-    redisConnection.rpush('crawling:to_visit', initialURL) 
-
+    
     while True:
-        item = redisConnection.blpop('crawling:to_visit', 60) 
-        if item is None: 
-            print('Timeout! No more items to process') 
-            break 
-
-        url = item[1].decode('utf-8') 
-        print('Pop URL', url) 
+        item = repo.popFromQueue(60)
+        if item is None:
+            print("Timeout: No more items to process.")
+            break
+    
+        url = item[1].decode('utf-8')
+        print(f"Processing URL: {url}")
         processURL.delay(url)
+
+    return repo.getVisitedCount()

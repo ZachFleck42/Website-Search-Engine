@@ -3,7 +3,6 @@ import sys
 import time
 import utils
 from crawler import crawlWebsite
-from psycopg2 import sql
 
 
 if __name__ == "__main__":
@@ -13,11 +12,10 @@ if __name__ == "__main__":
         
     # Initialize important variables
     initialURL = sys.argv[1]
-    maxDepth = int(sys.argv[2])
-    tableName = utils.getTableName(initialURL)
     skippingDataCollection = 0
 
     # If a table already exists for the domain, check with user on how to proceed
+    tableName = utils.getTableName(initialURL)
     if utils.tableExists(tableName):
         useExistingDataAnswer = input("Database for domain already exists. Use existing data? (y/n): ")
         print("--------------------")
@@ -28,7 +26,7 @@ if __name__ == "__main__":
             
     # If database table doesn't exist (or was deleted), crawl the website and collect data
     if not skippingDataCollection:
-        crawlWebsite(initialURL, tableName)
+            webpageVisitCount = crawlWebsite(initialURL)    
 
     # Allow user to search for terms until program terminated
     while True:
