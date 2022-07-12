@@ -1,18 +1,23 @@
+import psycopg2
 import sys
+from psycopg2 import sql
 from urllib.parse import urlparse
 
-def tableExists(databaseConnection, tableName):
+databaseConnectionParamaters = {"host": "app", "database": "searchenginedb", "user": "postgres", "password": "postgres"}
+
+def tableExists(tableName):
     '''
-    Accepts a database connection and a table name to check.
+    Accepts a table name to check.
     If table exists in the databse, function returns True. Returns false otherwise.
     '''
-    cursor = databaseConnection.cursor()
-    cursor.execute("""
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
+    databaseCursor = databaseConnection.cursor()
+    databaseCursor.execute("""
         SELECT COUNT(*)
         FROM information_schema.tables
         WHERE table_name = '{0}'
         """.format(tableName.replace('\'', '\'\'')))
-    if cursor.fetchone()[0] == 1:
+    if databaseCursor.fetchone()[0] == 1:
         return True
 
     return False
@@ -44,3 +49,29 @@ def checkValidUsage():
         return 0
         
     return 1
+    
+    
+def createTable(tableName):
+    '''
+    Accepts the name of a table to be created.
+    Creates the table according to 
+    '''
+    # Create a table for the website in the database
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
+    databaseCursor = databaseConnection.cursor()
+    databaseCursor.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR);")
+        .format(sql.Identifier(tableName)))
+    databaseConnection.commit()
+    databaseConnection.close()
+    
+    
+def dropTable(tableName):
+    '''
+    Accepts the name of a table to be dropped.
+    '''
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
+    databaseCursor = databaseConnection.cursor()
+    databaseCursor.execute(sql.SQL("DROP TABLE {};")
+        .format(sql.Identifier(tableName)))
+    databaseConnection.commit()
+    databaseConnection.close()

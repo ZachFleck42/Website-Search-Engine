@@ -1,12 +1,14 @@
+import psycopg2
 import requests
-import time
 from bs4 import BeautifulSoup
 from celery_app import app
+from utils import createTable
 from psycopg2 import sql
 from urllib.parse import urlparse
 
 # Define HTML headers
 requestHeaders = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'}
+databaseConnectionParamaters = {"host": "app", "database": "searchenginedb", "user": "postgres", "password": "postgres"}
 
 # Create a queue of URLs to visit and collect data from.
 # Each URL will also have a corresponding 'depth', or number of links removed from the original URL.
@@ -114,7 +116,7 @@ def getLinks(pageURL, parsedPage, initialURL):
     return cleanedLinks
 
 
-def collectDataFromPage (databaseConnection, tableName, pageURL, parsedPage):
+def collectDataFromPage (tableName, pageURL, parsedPage):
     '''
     Accepts a database connection, the name of a table within that database, the
         URL of a webpage, and the parsed webpage object from BeautifulSoup
@@ -123,14 +125,18 @@ def collectDataFromPage (databaseConnection, tableName, pageURL, parsedPage):
     pageTitle = parsedPage.title.string
     pageText = parsedPage.get_text()
     
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     cursor = databaseConnection.cursor()
     cursor.execute(sql.SQL("INSERT INTO {} VALUES (%s, %s, %s);")
-                .format(sql.Identifier(tableName)),
-                [pageURL, pageTitle, pageText])
+        .format(sql.Identifier(tableName)),
+        [pageURL, pageTitle, pageText])
+        
+    databaseConnection.commit()
+    databaseConnection.close()
         
                 
 @app.task        
-def processURL(databaseConnection, tableName, initialURL, maxDepth, urlTuple):
+def processURL(initialURL, maxDepth, tableName, urlTuple):
     '''
     To do lol
     '''
@@ -157,7 +163,7 @@ def processURL(databaseConnection, tableName, initialURL, maxDepth, urlTuple):
         
     # Collect data from the webpage
     print(f"Collecting data from page...")
-    collectDataFromPage(databaseConnection, tableName, pageURL, parsedPage)
+    collectDataFromPage(tableName, pageURL, parsedPage)
     print("Collected data successfully.")
 
     # If the current webpage is not at MAX_DEPTH, get a list of links found
@@ -175,9 +181,9 @@ def processURL(databaseConnection, tableName, initialURL, maxDepth, urlTuple):
     # URL done procesing, proceed to next in queue
     print("Continuing...")
     print("--------------------")
-                
     
-def crawlWebsite(databaseConnection, tableName, initialURL, maxDepth):
+    
+def crawlWebsite(initialURL, maxDepth, tableName):
     '''
     Accepts a database connection and the name of a table within the database.
     Returns a list of webpages visited during the function's call.
@@ -185,15 +191,13 @@ def crawlWebsite(databaseConnection, tableName, initialURL, maxDepth):
         Functions are kept seperate for easy modification in other programs.
     '''
     # Create a table for the website in the database
-    cursor = databaseConnection.cursor()
-    cursor.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR);")
-                    .format(sql.Identifier(tableName)))
+    createTable(tableName)
     
     # Begin processing the queue
     webpageVisitCount = 0
     urls.append((initialURL, 0))
     for url in urls:
-        task = processURL.delay(databaseConnection, tableName, initialURL, maxDepth, url)
+        task = processURL.delay(initialURL, maxDepth, tableName, url)
         webpageVisitCount += 1
     
     return webpageVisitCount
