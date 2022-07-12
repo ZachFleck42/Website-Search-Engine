@@ -1,6 +1,8 @@
+import psycopg2
 from psycopg2 import sql
+from utils import databaseConnectionParamaters
 
-def countMethod(databaseConnection, tableName, userInput):    
+def countMethod(tableName, userInput):    
     '''
     Accepts user input as a string.
     Returns a list of search results that take the form:
@@ -11,9 +13,11 @@ def countMethod(databaseConnection, tableName, userInput):
     '''
     # Read website data into the program and search for occcurrences of user input
     searchResults = {}
-    cursor = databaseConnection.cursor()
-    cursor.execute(sql.SQL("SELECT * FROM {};").format(sql.Identifier(tableName)))
-    rows = cursor.fetchall()
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
+    databaseCursor = databaseConnection.cursor()
+    databaseCursor.execute(sql.SQL("SELECT * FROM {};").format(sql.Identifier(tableName)))
+    rows = databaseCursor.fetchall()
+    
     for row in rows:
         # Only append to results if webpage has at least one occurrence of user input
         if inputOccurrences := (row[2].lower()).count((userInput).lower()):

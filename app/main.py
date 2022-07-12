@@ -1,4 +1,3 @@
-import psycopg2
 import searchEngine
 import sys
 import time

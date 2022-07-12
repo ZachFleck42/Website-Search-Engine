@@ -3,12 +3,12 @@ import requests
 from bs4 import BeautifulSoup
 from celery_app import app
 from utils import createTable
+from utils import databaseConnectionParamaters
 from psycopg2 import sql
 from urllib.parse import urlparse
 
 # Define HTML headers
 requestHeaders = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'}
-databaseConnectionParamaters = {"host": "app", "database": "searchenginedb", "user": "postgres", "password": "postgres"}
 
 # Create a queue of URLs to visit and collect data from.
 # Each URL will also have a corresponding 'depth', or number of links removed from the original URL.
@@ -140,8 +140,8 @@ def processURL(initialURL, maxDepth, tableName, urlTuple):
     '''
     To do lol
     '''
-    pageURL = urlTuple[0]
     # Append current URL to 'visitedLinks' list to prevent visiting again later
+    pageURL = urlTuple[0]
     visitedLinks.append(pageURL)
 
     # Use Requests package to obtain a 'Response' object from the webpage,
@@ -181,6 +181,7 @@ def processURL(initialURL, maxDepth, tableName, urlTuple):
     # URL done procesing, proceed to next in queue
     print("Continuing...")
     print("--------------------")
+    return 1
     
     
 def crawlWebsite(initialURL, maxDepth, tableName):
