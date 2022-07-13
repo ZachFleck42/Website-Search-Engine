@@ -9,12 +9,8 @@ visitedKey = 'crawling:visited'
 # Queue of URLs to visit
 def addToQueue(url):
     '''Add url to queue of URLs to be visited'''
-    return redisConnection.sadd(url)
+    return redisConnection.sadd(toVisitKey, url)
     
-def inQueue(url):
-    '''Check if URL is currently in queue'''
-    return redisConnection.smismember(url)
-
 def popFromQueue():
     '''Pop first-in URL from the queue of URLs to be visited'''
     return redisConnection.spop(toVisitKey)
