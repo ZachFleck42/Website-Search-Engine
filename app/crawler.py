@@ -43,7 +43,7 @@ def crawlWebsite(initialURL, databaseTable):
     while not task.ready():
         time.sleep(1)
         waitTimer += 1
-        if waitTimer == 10:
+        if waitTimer >= 10:
             print("Waiting on Celery to finish...")
             waitTimer = 0
     
@@ -51,7 +51,7 @@ def crawlWebsite(initialURL, databaseTable):
     return redis_utils.getVisitedCount()
     
     
-@app.task(rate_limit="20/s")
+@app.task(rate_limit='20/s')
 def processURL(url, databaseTable):
     '''
     Parent function for connecting to and scraping/storing data from an individual webpage.
@@ -61,16 +61,17 @@ def processURL(url, databaseTable):
     # Connect to the URL and get its HTML source
     pageHTML = getHTML(url)
     if not pageHTML:
-        print(f"ERROR: Could not get webpage's HTML. Continuing...")
+        print(f"ERROR: Could not get HTML from {url}")
         return 0
     
-    # Parse the webpage with BeautifulSoup, scrape data from page, and append to database
     parsedPage = BeautifulSoup(pageHTML, 'html.parser')
-    pageData = scrapeData(parsedPage)
-    appendData(url, pageData[0], pageData[1], databaseTable)
-    
-    # !
     getLinks(url, parsedPage)
+    
+    pageData = scrapeData(parsedPage)
+    if not appendData(url, pageData[0], pageData[1], databaseTable):
+        print(f"ERROR: Could not append data from {url}")
+    
+    return 1
 
 
 def getHTML(url):

@@ -60,10 +60,21 @@ def appendData(url, pageTitle, pageText, tableName):
     Appends specified data to the database.
     '''
     cursor = databaseConnection.cursor()
-    cursor.execute(sql.SQL("INSERT INTO {} VALUES (%s, %s, %s);")
-        .format(sql.Identifier(tableName)),
-        [url, pageTitle, pageText])
-    databaseConnection.commit()
+    try:
+        cursor.execute(sql.SQL("INSERT INTO {} VALUES (%s, %s, %s);")
+            .format(sql.Identifier(tableName)),
+            [url, pageTitle, pageText])
+    except psycopg2.OperationalError:
+        cursor.close()
+        return 0
+    
+    try:
+        databaseConnection.commit()
+    except psycopg2.OperationalError:
+        cursor.close()
+        return 0
+    
+    return 1
     
 
 def fetchAllData(tableName):
