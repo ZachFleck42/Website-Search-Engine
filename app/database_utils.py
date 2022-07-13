@@ -3,7 +3,7 @@ from psycopg2 import sql
 from urllib.parse import urlparse
 
 databaseConnectionParamaters = {"host": "app", "database": "searchEngineDb", "user": "postgres", "password": "postgres"}
-databaseConnection = databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
+databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
 
 
 def createTable(tableName):
@@ -81,7 +81,6 @@ def fetchAllData(tableName):
     '''
     Returns all rows of data found in table with name {tableName} in database.
     '''
-    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
     databaseCursor.execute(sql.SQL("SELECT * FROM {};").format(sql.Identifier(tableName)))
     return databaseCursor.fetchall()

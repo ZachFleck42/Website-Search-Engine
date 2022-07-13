@@ -1,10 +1,9 @@
-from tracemalloc import start
-import search_utils
 import sys
 import time
 from crawler import crawlWebsite
 from database_utils import getTableName, tableExists, dropTable
 from redis_utils import clearCache
+from search_utils import runSearch
 
 
 def checkValidUsage():
@@ -42,17 +41,20 @@ if __name__ == "__main__":
     # Begin searching the website
     while True:
         # Get user input for search term. Allow exiting program via 'x' command
-        userInput = input("Enter search term, or enter 'x' to exit: ")
+        searchMethod = input(f"Which search method would you like to use?\n(1) Python .count() method\n(2) Boyer-Moore\n(3) Aho-Corasick\n(4) Robin-Karp\nInput: ")
+        userInput = input("Enter search term, or 'x' to exit: ")
         if userInput.lower() == 'x':
             sys.exit()
         
         # Search the website for the user's input and record how long the search takes
         timestampSearchStart = time.time()
-        searchResults = search_utils.countMethod(tableName, userInput)
+        searchResults = runSearch(tableName, userInput, int(searchMethod))
         timestampSearchEnd = time.time()
         
         # Print search results
+        print("--------------------")
         print(f'Top 10 Results for search of "{userInput}":')
         for result in searchResults[0:10]:
             print(result)
         print(f"Search took {((timestampSearchEnd - timestampSearchStart) * 1000):.2f} milliseconds.")
+        print("--------------------")

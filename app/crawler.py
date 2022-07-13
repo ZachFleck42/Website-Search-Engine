@@ -70,6 +70,7 @@ def processURL(url, databaseTable):
     pageData = scrapeData(parsedPage)
     if not appendData(url, pageData[0], pageData[1], databaseTable):
         print(f"ERROR: Could not append data from {url}")
+        return 0
     
     return 1
 
@@ -87,12 +88,17 @@ def getHTML(url):
         return pageResponse.text
 
 
+# def preProcessText(text):
+#     return text.encode(encoding="ascii", errors="replace")
+    
+
 def scrapeData(parsedPage):
     ''''
     Pulls and returns data from a parsed webpage.
     '''
     pageTitle = parsedPage.title.string
     pageText = parsedPage.get_text()
+    # pageText = preProcessText(parsedPage.get_text())
     
     return (pageTitle, pageText)
     

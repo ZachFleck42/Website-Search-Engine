@@ -1,24 +1,31 @@
+from ahocorapy.keywordtree import KeywordTree
 from database_utils import fetchAllData
+from search_algorithms.boyer_moore import BMsearch
+from search_algorithms.robin_karp import RKsearch
 
-def countMethod(tableName, userInput):    
-    '''
-    Accepts user input as a string.
-    Returns a list of search results that take the form:
-        (Page's title, # of occurrences of user's input found on page)
-    Uses Python's standard library count() method from the string object as the 
-        search 'algorithm'.
-    Serves as a benchmark to compare against other algorithms.
-    '''
+
+def runSearch(tableName, userInput, searchMethod=1):
     # Read website data into the program from database
     rows = fetchAllData(tableName)
     
     # Store the search results in a dictionary
     searchResults = {}
     for row in rows:
-        # Only append to results if webpage has at least one occurrence of user input
-        if inputOccurrences := (row[2].lower()).count((userInput).lower()):
-            searchResults[row[1]] = inputOccurrences
+        results = 0
+        if searchMethod == 1:
+            results = (row[2].lower()).count((userInput).lower())
+        elif searchMethod == 2:
+            results = len(BMsearch(userInput.lower(), row[2].lower()))
+        elif searchMethod == 3:
+            kwtree = KeywordTree(case_insensitive=True)
+            kwtree.add(userInput)
+            kwtree.finalize()
+            if resultsFound := kwtree.search_all(row[2]):
+                results = sum(1 for result in resultsFound)
+        elif searchMethod == 4:
+            results = len(RKsearch(userInput.lower(), row[2].lower()))
+        
+        searchResults[row[1]] = results
             
-    # Sort results in decreasing order of occurrences of user input on pages
     searchResultsSorted = sorted(searchResults.items(), key=lambda x: x[1], reverse=True)
     return(searchResultsSorted)
