@@ -28,7 +28,7 @@ def crawlWebsite(initialURL, databaseTable):
             redis_utils.markVisited(url)
         else:
             if timeoutCounter == 5:
-                print("Timed out")
+                print("Queue is now empty. All valid URLs have been sent to Celery for processing.")
                 break
             time.sleep(1)
             timeoutCounter += 1
@@ -55,6 +55,7 @@ def crawlWebsite(initialURL, databaseTable):
 def processURL(url, databaseTable):
     '''
     Parent function for connecting to and scraping/storing data from an individual webpage.
+    Returns 1 if page was processed without error.
     '''
     print(f"Processing {url} ...")
     
@@ -64,9 +65,11 @@ def processURL(url, databaseTable):
         print(f"ERROR: Could not get HTML from {url}")
         return 0
     
+    # Parse the page and find any suitable links to append to the queue
     parsedPage = BeautifulSoup(pageHTML, 'html.parser')
     getLinks(url, parsedPage)
     
+    # Scrape data from the page and append it to the database
     pageData = scrapeData(parsedPage)
     if not appendData(url, pageData[0], pageData[1], databaseTable):
         print(f"ERROR: Could not append data from {url}")
@@ -88,17 +91,12 @@ def getHTML(url):
         return pageResponse.text
 
 
-# def preProcessText(text):
-#     return text.encode(encoding="ascii", errors="replace")
-    
-
 def scrapeData(parsedPage):
     ''''
     Pulls and returns data from a parsed webpage.
     '''
     pageTitle = parsedPage.title.string
     pageText = parsedPage.get_text()
-    # pageText = preProcessText(parsedPage.get_text())
     
     return (pageTitle, pageText)
     
@@ -122,7 +120,9 @@ def getLinks(url, parsedPage):
 
 def cleanLinks(links, pageURL):
     '''
-    
+    Accepts a list of raw links/references pulled from a webpage's <a> tags.
+    Passes links through a series of filters to prune unwanted links.
+    Returns nothing; instead directly appends suitable links to the queue.
     '''
     for index, link in enumerate(links):
         # Ignore any links to the current page
@@ -180,6 +180,6 @@ def cleanLinks(links, pageURL):
         if urlparse(links[index]).scheme != "https":
             links[index] = "https" + links[index][4:]
             
-        # !
+        # Link has passed through all filters and is suitable to be appended to queue
         if not redis_utils.hasBeenVisited(links[index]):
             redis_utils.addToQueue(links[index])

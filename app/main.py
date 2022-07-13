@@ -24,7 +24,6 @@ if __name__ == "__main__":
     skippingDataCollection = 0
     if tableExists(tableName):
         useExistingDataAnswer = input("Database for domain already exists. Use existing data? (y/n): ")
-        print("--------------------")
         if useExistingDataAnswer.lower() == 'y':        # If using existing data, no need to crawl website
             skippingDataCollection = 1
         elif useExistingDataAnswer.lower() == 'n':      # If not using existing data, drop the table
@@ -32,16 +31,19 @@ if __name__ == "__main__":
             dropTable(tableName)
             
     # If database table doesn't exist (or was deleted), crawl the website and collect data
+    print("--------------------")
     if not skippingDataCollection:
         startCrawlTime = time.time()
         webpageVisitCount = crawlWebsite(initialURL, tableName)
         stopCrawlTime = time.time()
-        print(f"Crawled {webpageVisitCount} pages in {stopCrawlTime - startCrawlTime} seconds.")
+        print(f"Crawled {webpageVisitCount} pages in {((stopCrawlTime - startCrawlTime) - 5):.2f} seconds.")
 
     # Begin searching the website
     while True:
-        # Get user input for search term. Allow exiting program via 'x' command
+        # Get user input for which search method to use
         searchMethod = input(f"Which search method would you like to use?\n(1) Python .count() method\n(2) Boyer-Moore\n(3) Aho-Corasick\n(4) Robin-Karp\nInput: ")
+        
+        # Get user input for search term
         userInput = input("Enter search term, or 'x' to exit: ")
         if userInput.lower() == 'x':
             sys.exit()
