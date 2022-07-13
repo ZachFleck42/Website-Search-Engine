@@ -1,6 +1,7 @@
 ahocorapy
 beautifulsoup4
 celery
+nltk
 psycopg2
 redis
 requests
