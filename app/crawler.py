@@ -38,7 +38,7 @@ def crawlWebsite(initialURL, databaseTable):
     return redis_utils.getVisitedCount()
     
     
-@app.task        
+@app.task(rate_limit="10/s")
 def processURL(url, databaseTable):
     '''
     Parent function for connecting to and scraping/storing data from an individual webpage.
@@ -65,7 +65,8 @@ def processURL(url, databaseTable):
     
     # Add all valid, unseen links from the page to the queue
     if pageLinks := getLinks(url, parsedPage):
-        addLinksToQueue(pageLinks)
+        for link in pageLinks:
+            redis_utils.addToQueue(link)
         
     # Move URL from Celery processing queue to 'visited'
     redis_utils.moveToVisited(url)
@@ -183,18 +184,12 @@ def cleanLinks(links, pageURL):
         if urlparse(links[index]).scheme != "https":
             links[index] = "https" + links[index][4:]
             
+        # Do not visit links that have already been visited
+        if seen(links[index]):
+            continue
+            
         # All filters passed; link is appended to 'clean' list
         cleanedLinks.append(links[index])
 
     # Remove any duplicate links in the list and return it
     return list(set(cleanedLinks))
-
-
-def addLinksToQueue(links):
-    '''
-    Adds one or more links to the queue of links to be visited.
-    Does not queue already 'seen' links.
-    '''
-    for link in links: 
-        if not seen(link):
-            redis_utils.addToQueue(link)
