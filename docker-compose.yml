@@ -1,6 +1,17 @@
 version: '3.9'
 
 services:
+  postgres:
+    image: postgres:14.4
+    environment:
+      - POSTGRES_DB=searchEngineDb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - database:/data
+
   redis:
     image: redis:7.0
     ports:
@@ -9,17 +20,13 @@ services:
   app:
     build: .
     depends_on:
+      - postgres
       - redis
-    environment:
-      - POSTGRES_DB=searchEngineDb
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    ports: 
-      - 5432:5432
+    ports:
+      - 8080:8080
     volumes: 
-      - database:/data
       - ./app:/app
-    # command: celery -A crawler worker --loglevel=info
+    command: celery -A crawler worker --loglevel=info
     
 volumes: 
   database:

@@ -2,7 +2,7 @@ import psycopg2
 from psycopg2 import sql
 from urllib.parse import urlparse
 
-databaseConnectionParamaters = {"host": "app", "database": "searchEngineDb", "user": "postgres", "password": "postgres"}
+databaseConnectionParamaters = {"host": "postgres", "database": "searchEngineDb", "user": "postgres", "password": "postgres"}
 databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
 
 
