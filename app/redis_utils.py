@@ -3,25 +3,38 @@ from redis import Redis
 redisConnection = Redis(host='redis', port=6379)
 
 toVisitKey = 'crawling:to_visit'
-visitedKey = 'crawling:visited'
 processingKey = 'crawling:queued'
+visitedKey = 'crawling:visited'
 
 # Queue of URLs to visit
 def addToQueue(url):
     '''Add url to queue of URLs to be visited'''
-    if redisConnection.execute_command('LPOS', toVisitKey, url) is None:
-        redisConnection.rpush(toVisitKey, url)
+    return redisConnection.sadd(url)
+    
+def inQueue(url):
+    '''Check if URL is currently in queue'''
+    return redisConnection.smismember(url)
 
-def popFromQueue(timeout=0):
+def popFromQueue():
     '''Pop first-in URL from the queue of URLs to be visited'''
-    return redisConnection.blpop(toVisitKey, timeout)
+    return redisConnection.spop(toVisitKey)
+    
 
+# Currently being processed by Celery
+def moveToProcessing(url):
+    '''Mark the URL as having been sent to Celery for processing'''
+    redisConnection.smove(toVisitKey, processingKey, url)
+    
+def isProcessing(url):
+    '''Checks if URL has been sent to Celery for processing'''
+    return redisConnection.sismember(processingKey, url)
+    
 
 # Already visited URLs
-def addToVisited(url):
-    '''Append URL to list of already-visited URLs'''
-    redisConnection.sadd(visitedKey, url)
-
+def moveToVisited(url):
+    '''Moves URL from processing to visited'''
+    redisConnection.smove(processingKey, visitedKey, url)
+    
 def hasBeenVisited(url):
     """Checks if URL has already been visited"""
     return redisConnection.sismember(visitedKey, url)
@@ -30,20 +43,6 @@ def getVisitedCount():
     '''Gets the number of URLs already visited by program'''
     return redisConnection.scard(visitedKey)
 
-
-# Currently being processed by Celery
-def markAsProcessing(url):
-    '''Mark the URL as having been sent to Celery for processing'''
-    redisConnection.sadd(processingKey, url)
-
-def isProcessing(url):
-    '''Checks if URL has been sent to Celery for processing'''
-    return redisConnection.sismember(processingKey, url)
-
-def moveToVisited(url):
-    '''Moves URL from processing to visited'''
-    redisConnection.smove(processingKey, visitedKey, url)
-    
 
 # Misc
 def clearCache():

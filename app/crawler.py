@@ -1,5 +1,6 @@
 import redis_utils
 import requests
+import time
 from bs4 import BeautifulSoup
 from celery import Celery
 from database_utils import appendData, createTable
@@ -19,18 +20,23 @@ def crawlWebsite(initialURL, databaseTable):
     createTable(databaseTable)
     
     # While there are still links in the queue...
-    timeoutTimer = 60
+    timeoutTimer = 10
     while True:
         # Pop a URL from the queue
-        item = redis_utils.popFromQueue(timeoutTimer)
+        url = redis_utils.popFromQueue()
         
         # If the timeout timer is met, stop crawling.
-        if item is None:
-            print("Timed out")
-            break
+        if url is None:
+            if temp == 1:
+                print("Timed out!")
+                break
+            
+            print("None popped from queue!")
+            time.sleep(timeoutTimer)
+            temp = 1
     
         # If a URL was found in queue, send it to Celery for processing.
-        url = item[1].decode('utf-8')
+        temp = 0
         print(url)
         processURL.delay(url, databaseTable)
 
@@ -43,14 +49,9 @@ def processURL(url, databaseTable):
     '''
     Parent function for connecting to and scraping/storing data from an individual webpage.
     '''
-    # Check if URL has already been visited or is currently in the queue
+    # !
     print(f"Processing {url} ...")
-    if seen(url):
-        print(f"ERROR: URL has already been seen! Continuing...")
-        return 0
-        
-    # Mark the URL as present in the Celery queue
-    redis_utils.markAsProcessing(url)
+    redis_utils.moveToProcessing(url)
     
     # Connect to the URL and get its HTML source
     pageHTML = getHTML(url)
@@ -71,13 +72,6 @@ def processURL(url, databaseTable):
     # Move URL from Celery processing queue to 'visited'
     redis_utils.moveToVisited(url)
     return 1
-    
-    
-def seen(url):
-    '''
-    Checks to see if a URL has been seen by the program before.
-    '''
-    return redis_utils.hasBeenVisited(url) or redis_utils.isProcessing(url)
 
 
 def getHTML(url):
@@ -184,7 +178,7 @@ def cleanLinks(links, pageURL):
         if urlparse(links[index]).scheme != "https":
             links[index] = "https" + links[index][4:]
             
-        # Do not visit links that have already been visited
+        # Do not visit links that have already been visited or are currently in queue or are currently being processed
         if seen(links[index]):
             continue
             
@@ -193,3 +187,10 @@ def cleanLinks(links, pageURL):
 
     # Remove any duplicate links in the list and return it
     return list(set(cleanedLinks))
+    
+    
+def seen(url):
+    '''
+    Checks to see if a URL has been seen by the program before at all.
+    '''
+    return redis_utils.hasBeenVisited(url) or redis_utils.isProcessing(url) or redis_utils.inQueue(url)
