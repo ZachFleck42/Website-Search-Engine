@@ -1,3 +1,4 @@
+from tracemalloc import start
 import search_utils
 import sys
 import time
@@ -33,7 +34,10 @@ if __name__ == "__main__":
             
     # If database table doesn't exist (or was deleted), crawl the website and collect data
     if not skippingDataCollection:
-        webpageVisitCount = crawlWebsite(initialURL, tableName)    
+        startCrawlTime = time.time()
+        webpageVisitCount = crawlWebsite(initialURL, tableName)
+        stopCrawlTime = time.time()
+        print(f"Crawled {webpageVisitCount} pages in {stopCrawlTime - startCrawlTime} seconds.")
 
     # Begin searching the website
     while True:

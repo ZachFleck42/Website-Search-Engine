@@ -19,7 +19,7 @@ def crawlWebsite(initialURL, databaseTable):
     createTable(databaseTable)
     
     # While there are still links in the queue...
-    timeoutTimer = 5
+    timeoutTimer = 60
     while True:
         # Pop a URL from the queue
         item = redis_utils.popFromQueue(timeoutTimer)
@@ -166,25 +166,23 @@ def cleanLinks(links, pageURL):
         # Delete any queries
         links[index] = links[index].split('?', 1)[0]
         
-        # ! Expand internal links
-        parsedURL = urlparse(pageURL)
-        linkHost = (urlparse(links[index])).hostname
-        if links[index][0] == '/':
-            links[index] = parsedURL.scheme + "://" + parsedURL.hostname + links[index]
-            
-        if linkHost is None:
-            links[index] = parsedURL.scheme + "://" + parsedURL.hostname + parsedURL.path + "/" + links[index]
-            linkHost = parsedURL.hostname
-            
-        # Ensure we are only visiting https:// versions of webpages
-        if urlparse(links[index]).scheme == "http":
-            links[index] = "https" + links[index][4:]
-        
+        # Expand internal links
+        parsedInitialURL = urlparse(pageURL)
+        parsedLinkURL = urlparse(links[index])
+        if parsedLinkURL.hostname == None:
+            if links[index][0] == '/':
+                links[index] = "https://" + parsedInitialURL.hostname + links[index]
+            else:
+                links[index] = "https://" + parsedInitialURL.hostname + parsedInitialURL.path.rstrip('/') + "/" + links[index]
+                
         # Ignore links to other domains
-        initialHost = parsedURL.hostname
-        if initialHost != linkHost:
+        if parsedInitialURL.hostname != urlparse(links[index]).hostname:
             continue
-
+        
+        # Only visit https:// URLs (not http://)
+        if urlparse(links[index]).scheme != "https":
+            links[index] = "https" + links[index][4:]
+            
         # All filters passed; link is appended to 'clean' list
         cleanedLinks.append(links[index])
 
