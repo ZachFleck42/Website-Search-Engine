@@ -7,6 +7,7 @@ from database_utils import appendData, createTable
 from urllib.parse import urlparse
 
 app = Celery('Search_Engine', broker='redis://redis:6379/1')
+app.conf.result_backend = 'redis://redis:6379/1'
 
 
 def crawlWebsite(initialURL, databaseTable):
@@ -23,39 +24,39 @@ def crawlWebsite(initialURL, databaseTable):
     timeoutCounter = 0
     while True:
         # Pop a URL from the queue
-        item = redis_utils.popFromQueue()
-        
-        # If the timeout timer is met, stop crawling.
-        if item == None:
-            if timeoutCounter == 10:
+        if url := redis_utils.popFromQueue():
+            redis_utils.markVisited(url)
+        else:
+            if timeoutCounter == 5:
                 print("Timed out")
                 break
-            
             time.sleep(1)
             timeoutCounter += 1
             continue
-            
-        # If a URL was found in queue, send it to Celery for processing.
-        url = item.decode('utf-8')
-        timeoutCounter = 0
+        
         print(url)
-        processURL.delay(url, databaseTable)
+        timeoutCounter = 0
+        task = processURL.delay(url, databaseTable)
 
+    # Wait for Celery to finish...?
+    waitTimer = 0
+    while not task.ready():
+        time.sleep(1)
+        waitTimer += 1
+        if waitTimer == 10:
+            print("Waiting on Celery to finish...")
+            waitTimer = 0
+    
     # Return the total number of webpages visited
     return redis_utils.getVisitedCount()
     
     
-@app.task(rate_limit="10/s")
+@app.task(rate_limit="20/s")
 def processURL(url, databaseTable):
     '''
     Parent function for connecting to and scraping/storing data from an individual webpage.
     '''
     print(f"Processing {url} ...")
-    if seen(url):
-        print(f"ERROR: {url} already seen. Continuing...")
-        return 0
-        
-    redis_utils.moveToProcessing(url)
     
     # Connect to the URL and get its HTML source
     pageHTML = getHTML(url)
@@ -64,21 +65,12 @@ def processURL(url, databaseTable):
         return 0
     
     # Parse the webpage with BeautifulSoup, scrape data from page, and append to database
-    # print(f"Successfully connected to {url}")
     parsedPage = BeautifulSoup(pageHTML, 'html.parser')
     pageData = scrapeData(parsedPage)
     appendData(url, pageData[0], pageData[1], databaseTable)
-    # print(f"Successfully saved {url} to database")
     
-    # Add all valid, unseen links from the page to the queue
-    if pageLinks := getLinks(url, parsedPage):
-        # print(f"Appending URLs to queue: {pageLinks}")
-        for link in pageLinks:
-            redis_utils.addToQueue(link)
-        
-    # Move URL from Celery processing queue to 'visited'
-    redis_utils.moveToVisited(url)
-    return 1
+    # !
+    getLinks(url, parsedPage)
 
 
 def getHTML(url):
@@ -118,17 +110,13 @@ def getLinks(url, parsedPage):
 
     # Clean the links and return the list
     if links:
-        return cleanLinks(links, url)
-    
-    return 0
+        cleanLinks(links, url)
 
 
 def cleanLinks(links, pageURL):
     '''
-    Takes a list of 'raw' links and passes them through a series of filters.
-    Any links remaining are returned as 'cleaned' links.
+    
     '''
-    cleanedLinks = []
     for index, link in enumerate(links):
         # Ignore any links to the current page
         if link == '/':
@@ -185,19 +173,6 @@ def cleanLinks(links, pageURL):
         if urlparse(links[index]).scheme != "https":
             links[index] = "https" + links[index][4:]
             
-        # Do not visit links that have already been visited or are currently in queue or are currently being processed
-        if seen(links[index]):
-            continue
-            
-        # All filters passed; link is appended to 'clean' list
-        cleanedLinks.append(links[index])
-
-    # Remove any duplicate links in the list and return it
-    return list(set(cleanedLinks))
-    
-    
-def seen(url):
-    '''
-    Checks to see if a URL has been seen by the program at all.
-    '''
-    return redis_utils.isProcessing(url) or redis_utils.hasBeenVisited(url)
+        # !
+        if not redis_utils.hasBeenVisited(links[index]):
+            redis_utils.addToQueue(links[index])
