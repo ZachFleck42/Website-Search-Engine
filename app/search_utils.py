@@ -1,6 +1,7 @@
 from ahocorapy.keywordtree import KeywordTree
 from database_utils import fetchAllData
 from search_algorithms.boyer_moore import BMsearch
+from search_algorithms.knuth_morris_pratt import KMPsearch
 from search_algorithms.robin_karp import RKsearch
 
 
@@ -23,14 +24,16 @@ def runSearch(tableName, userInput, searchMethod=1):
             results = (row[2].lower()).count((userInput).lower())
         elif searchMethod == 2:     # Search method is Boyer-Moore algorithm
             results = len(BMsearch(userInput.lower(), row[2].lower()))
-        elif searchMethod == 3:     # Search method is Aho-Corasick algorithm
+        elif searchMethod == 3:     # Search method is Knuth-Morris-Pratt algorithm
+            results = len(KMPsearch(userInput.lower(), row[2].lower()))
+        elif searchMethod == 4:     # Search method is Robin-Karp algorithm
+            results = len(RKsearch(userInput.lower(), row[2].lower()))
+        elif searchMethod == 5:     # Search method is Aho-Corasick algorithm
             kwtree = KeywordTree(case_insensitive=True)
             kwtree.add(userInput)
             kwtree.finalize()
             if resultsFound := kwtree.search_all(row[2]):
                 results = sum(1 for result in resultsFound)
-        elif searchMethod == 4:      # Search method is Robin-Karp algorithm
-            results = len(RKsearch(userInput.lower(), row[2].lower()))
         
         # Append results to the dictionary
         searchResults[row[1]] = results

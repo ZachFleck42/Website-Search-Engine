@@ -41,7 +41,7 @@ if __name__ == "__main__":
     # Begin searching the website
     while True:
         # Get user input for which search method to use
-        searchMethod = input(f"Which search method would you like to use?\n(1) Python .count() method\n(2) Boyer-Moore\n(3) Aho-Corasick\n(4) Robin-Karp\nInput: ")
+        searchMethod = input(f"Which search method/algorithm would you like to use?\n(1) Python .count() method\n(2) Boyer-Moore\n(3) Knuth-Morris-Pratt\n(4) Robin-Karp\n(5) Aho-Corasick\nInput: ")
         
         # Get user input for search term
         userInput = input("Enter search term, or 'x' to exit: ")
