@@ -41,22 +41,30 @@ if __name__ == "__main__":
     # Begin searching the website
     while True:
         # Get user input for which search method to use
-        searchMethod = input(f"Which search method/algorithm would you like to use?\n(1) Python .count() method\n(2) Boyer-Moore\n(3) Knuth-Morris-Pratt\n(4) Robin-Karp\n(5) Aho-Corasick\nInput: ")
-        
+        searchMethod = input(f"Which search method would you like to use?\n(1) Python str.count()\n(2) Boyer-Moore\n(3) Knuth-Morris-Pratt\n(4) Robin-Karp\n(5) Aho-Corasick\nInput: ")
+        if searchMethod.lower() == 'x':
+            sys.exit()
+            
         # Get user input for search term
-        userInput = input("Enter search term, or 'x' to exit: ")
-        if userInput.lower() == 'x':
+        searchTerm = input("Enter search term, or 'x' to exit: ")
+        if searchTerm.lower() == 'x':
             sys.exit()
         
         # Search the website for the user's input and record how long the search takes
         timestampSearchStart = time.time()
-        searchResults = runSearch(tableName, userInput, int(searchMethod))
+        searchResults = runSearch(tableName, searchTerm, int(searchMethod))
         timestampSearchEnd = time.time()
         
         # Print search results
-        print("--------------------")
-        print(f'Top 10 Results for search of "{userInput}":')
+        print("------------------------------------------")
+        print(f'Top 10 Results for the search term "{searchTerm}":\n')
+        print(f"          Title        No. of Matches")
+        print("------------------------------------------")
         for result in searchResults[0:10]:
-            print(result)
-        print(f"Search took {((timestampSearchEnd - timestampSearchStart) * 1000):.2f} milliseconds.")
+            if foundOnPage := result[1]: 
+                print(f"{result[0]:<30}", end='')
+                print(foundOnPage)
+                
+        
+        print(f"\nSearch took {((timestampSearchEnd - timestampSearchStart) * 1000):.2f} milliseconds.")
         print("--------------------")
