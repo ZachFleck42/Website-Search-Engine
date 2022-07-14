@@ -49,7 +49,7 @@ def processURL(url, databaseTable):
     Parent function for connecting to and scraping/storing data from an individual webpage.
     Returns 1 if page was processed without error.
     '''
-    print(f"Processing {url} ...")
+    print(f"Processing {url}")
     
     # Connect to the URL and get its HTML source
     if not (pageHTML := getHTML(url)):
@@ -107,7 +107,8 @@ def preProcessText(pageText):
     step3 = word_tokenize(step2)
     
     # Remove all stopwords from the text
-    step4 = [word for word in step3 if not word in stopwords.words() and "'" not in word]
+    stopWords = set(stopwords.words('english'))
+    step4 = [word for word in step3 if not word in stopWords]
     
     return " ".join(step4)
 
