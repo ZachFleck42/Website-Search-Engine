@@ -31,13 +31,13 @@ if __name__ == "__main__":
             dropTable(tableName)
             
     # If database table doesn't exist (or was deleted), crawl the website and collect data
-    print("--------------------")
     if not skippingDataCollection:
         startCrawlTime = time.time()
         webpageVisitCount = crawlWebsite(initialURL, tableName)
         stopCrawlTime = time.time()
         print(f"Crawled {webpageVisitCount} pages in {((stopCrawlTime - startCrawlTime) - 5):.2f} seconds.")
 
+    print("--------------------")
     # Begin searching the website
     while True:
         # Get user input for which search method to use
@@ -58,12 +58,10 @@ if __name__ == "__main__":
         # Print search results
         print("------------------------------------------")
         print(f'Top 10 Results for the search term "{searchTerm}":\n')
-        print(f"          Title        No. of Matches")
-        print("------------------------------------------")
         for result in searchResults[0:10]:
             if foundOnPage := result[1]: 
-                print(f"{result[0]:<30}", end='')
-                print(foundOnPage)
+                print(f"{result[0]:<40}", end='')
+                print(f"{foundOnPage} matches")
                 
         
         print(f"\nSearch took {((timestampSearchEnd - timestampSearchStart) * 1000):.2f} milliseconds.")

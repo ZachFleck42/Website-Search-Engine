@@ -14,29 +14,32 @@ def runSearch(tableName, userInput, searchMethod=1):
         ("pageTitle", No. of occurrences of userInput on page)
     '''
     # Read website data into the program from database
+    needle = userInput.lower()
     rows = fetchAllData(tableName)
     
     # Store the search results in a dictionary
     searchResults = {}
     for row in rows:
-        results = 0
+        needleOccurrences = 0
+        haystack = row[2]
         if searchMethod == 1:       # Search method is Python str.count() method
-            results = (row[2].lower()).count((userInput).lower())
+            needleOccurrences = (haystack.count(needle))
         elif searchMethod == 2:     # Search method is Boyer-Moore algorithm
-            results = len(BMsearch(userInput.lower(), row[2].lower()))
+            needleOccurrences = len(BMsearch(needle, haystack))
         elif searchMethod == 3:     # Search method is Knuth-Morris-Pratt algorithm
-            results = len(KMPsearch(userInput.lower(), row[2].lower()))
+            needleOccurrences = len(KMPsearch(needle, haystack))
         elif searchMethod == 4:     # Search method is Robin-Karp algorithm
-            results = len(RKsearch(userInput.lower(), row[2].lower()))
+            needleOccurrences = len(RKsearch(needle, haystack))
         elif searchMethod == 5:     # Search method is Aho-Corasick algorithm
             kwtree = KeywordTree(case_insensitive=True)
-            kwtree.add(userInput)
+            kwtree.add(needle)
             kwtree.finalize()
-            if resultsFound := kwtree.search_all(row[2]):
-                results = sum(1 for result in resultsFound)
+            if resultsFound := kwtree.search_all(haystack):
+                needleOccurrences = sum(1 for result in resultsFound)
         
         # Append results to the dictionary
-        searchResults[row[1]] = results
+        pageTitle = row[1]
+        searchResults[pageTitle] = needleOccurrences
             
     # Sort and return the list of results
     searchResultsSorted = sorted(searchResults.items(), key=lambda x: x[1], reverse=True)

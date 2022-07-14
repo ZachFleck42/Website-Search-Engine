@@ -3,13 +3,13 @@ from psycopg2 import sql
 from urllib.parse import urlparse
 
 databaseConnectionParamaters = {"host": "postgres", "database": "searchEngineDb", "user": "postgres", "password": "postgres"}
-databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
 
 
 def createTable(tableName):
     '''
     Creates a table with name {tableName} in the database
     '''
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
     databaseCursor.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR);")
         .format(sql.Identifier(tableName)))
@@ -20,10 +20,12 @@ def dropTable(tableName):
     '''
     Drops a table with name {tableName} from the database
     '''
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
     databaseCursor.execute(sql.SQL("DROP TABLE {};")
         .format(sql.Identifier(tableName)))
     databaseConnection.commit()
+    databaseConnection.close()
 
 
 def tableExists(tableName):
@@ -31,6 +33,7 @@ def tableExists(tableName):
     Checks to see if a table with name {tableName} already exists in database.
     Returns True if found, False if not.
     '''
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
     databaseCursor.execute("""
         SELECT COUNT(*)
@@ -38,8 +41,10 @@ def tableExists(tableName):
         WHERE table_name = '{0}'
         """.format(tableName.replace('\'', '\'\'')))
     if databaseCursor.fetchone()[0] == 1:
+        databaseConnection.close()
         return True
-        
+    
+    databaseConnection.close()
     return False
 
 
@@ -59,21 +64,14 @@ def appendData(url, pageTitle, pageText, tableName):
     '''
     Appends specified data to the database.
     '''
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     cursor = databaseConnection.cursor()
-    try:
-        cursor.execute(sql.SQL("INSERT INTO {} VALUES (%s, %s, %s);")
-            .format(sql.Identifier(tableName)),
-            [url, pageTitle, pageText])
-    except psycopg2.OperationalError:
-        cursor.close()
-        return 0
+    cursor.execute(sql.SQL("INSERT INTO {} VALUES (%s, %s, %s);")
+        .format(sql.Identifier(tableName)),
+        [url, pageTitle, pageText])
     
-    try:
-        databaseConnection.commit()
-    except psycopg2.OperationalError:
-        cursor.close()
-        return 0
-    
+    databaseConnection.commit()
+    databaseConnection.close()
     return 1
     
 
@@ -81,6 +79,9 @@ def fetchAllData(tableName):
     '''
     Returns all rows of data found in table with name {tableName} in database.
     '''
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
     databaseCursor.execute(sql.SQL("SELECT * FROM {};").format(sql.Identifier(tableName)))
-    return databaseCursor.fetchall()
+    data = databaseCursor.fetchall()
+    databaseConnection.close()
+    return data

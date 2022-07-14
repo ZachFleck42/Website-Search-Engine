@@ -15,6 +15,10 @@ def popFromQueue():
     if item := redisConnection.spop(toVisitKey):
         return item.decode('utf-8')
         
+def getQueueCount():
+    '''Gets the number of URLs in the queue'''
+    return redisConnection.scard(toVisitKey)
+        
 
 # Already visited URLs
 def markVisited(url):

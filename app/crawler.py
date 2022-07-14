@@ -10,6 +10,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from urllib.parse import urlparse
 
+requestHeaders = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'}
 app = Celery('Search_Engine', broker='redis://redis:6379/1')
 app.conf.result_backend = 'redis://redis:6379/1'
 
@@ -29,37 +30,20 @@ def crawlWebsite(initialURL, databaseTable):
     nltk.download('punkt')
     
     # While there are still links in the queue...
-    timeoutCounter = 0
-    while True:
-        # Pop a URL from the queue
+    while ((redis_utils.getQueueCount()) > 0) or (currentlyProcessing()):
         if url := redis_utils.popFromQueue():
             redis_utils.markVisited(url)
+            print(f"Sending to Celery for processing: {url}")
+            processURL.delay(url, databaseTable)
         else:
-            if timeoutCounter == 5:
-                print("Queue is now empty. All valid URLs have been sent to Celery for processing.")
-                break
-            time.sleep(1)
-            timeoutCounter += 1
+            time.sleep(5)
             continue
         
-        print(url)
-        timeoutCounter = 0
-        task = processURL.delay(url, databaseTable)
-
-    # Wait for Celery to finish...?
-    waitTimer = 0
-    while not task.ready():
-        time.sleep(1)
-        waitTimer += 1
-        if waitTimer >= 10:
-            print("Waiting on Celery to finish...")
-            waitTimer = 0
-    
     # Return the total number of webpages visited
     return redis_utils.getVisitedCount()
     
     
-@app.task(rate_limit='20/s')
+@app.task
 def processURL(url, databaseTable):
     '''
     Parent function for connecting to and scraping/storing data from an individual webpage.
@@ -68,17 +52,16 @@ def processURL(url, databaseTable):
     print(f"Processing {url} ...")
     
     # Connect to the URL and get its HTML source
-    pageHTML = getHTML(url)
-    if not pageHTML:
+    if not (pageHTML := getHTML(url)):
         print(f"ERROR: Could not get HTML from {url}")
         return 0
     
-    # Parse the page and find any suitable links to append to the queue
+    # Parse the page and scrape it for data and additional links
     parsedPage = BeautifulSoup(pageHTML, 'html.parser')
+    pageData = scrapeData(parsedPage)
     getLinks(url, parsedPage)
     
-    # Scrape data from the page and append it to the database
-    pageData = scrapeData(parsedPage)
+    # Append data to the database
     if not appendData(url, pageData[0], pageData[1], databaseTable):
         print(f"ERROR: Could not append data from {url}")
         return 0
@@ -90,8 +73,7 @@ def getHTML(url):
     '''
     Connects to a URL, obtains a response, and returns the webpage's HTML if available.
     '''
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'}
-    pageResponse = requests.get(url, headers=headers)
+    pageResponse = requests.get(url, headers=requestHeaders)
     pageStatus = pageResponse.status_code
     if pageStatus != 200:
         return 0
@@ -133,8 +115,7 @@ def preProcessText(pageText):
 def getLinks(url, parsedPage):
     '''
     Gets a list of "raw" links found on the passed-in webpage.
-    Passes any links to the cleanLinks function for cleaning.
-    Returns the list of cleaned links.
+    Passes any links to the filterLinks function for cleaning.
     '''
     # Find all valid links (not NoneType) from the <a> tags on the webpage
     links = []
@@ -142,17 +123,25 @@ def getLinks(url, parsedPage):
         if (link := reference.get('href')):
             links.append(link)
 
-    # Clean the links and return the list
+    # Filter unwanted links. Append all others to the queue.
     if links:
-        cleanLinks(links, url)
+        filterLinks(links, url)
 
 
-def cleanLinks(links, pageURL):
+def filterLinks(links, pageURL):
     '''
     Accepts a list of raw links/references pulled from a webpage's <a> tags.
     Passes links through a series of filters to prune unwanted links.
-    Returns nothing; instead directly appends suitable links to the queue.
+    Returns nothing. Instead directly appends suitable links to the queue.
     '''
+    unwantedTags = ["/Category:", "/File:", "/Talk:", "/User", "/Blog:", "/User_blog:", "/Special:", "/Template:", 
+                    "/Template_talk:", "Wiki_talk:", "/Help:", "/Source:", "/Forum:", "/Forum_talk:", "/ru/", "/es/", 
+                    "/ja/", "/de/", "/fi/", "/fr/", "/f/", "/pt-br/", "/uk/", "/he/", "/tr/", "/vi/", "/sv/", "/lt/", 
+                    "/pl/", "/hu/", "/ko/", "/da/"]
+    unwantedLanguages = ["/es", "/de", "/ja", "/fr", "/zh", "/pl", "/ru", "/nl", "/uk", "/ko", "/it", "/hu", "/sv", 
+                        "/cs", "/ms", "/da"]
+    unwantedExtensions = ["jpg", "png", "gif", "pdf"]
+                        
     for index, link in enumerate(links):
         # Ignore any links to the current page
         if link == '/':
@@ -171,17 +160,10 @@ def cleanLinks(links, pageURL):
             continue
         
         # Ignore links that end with unwanted extensions
-        unwantedExtensions = ["jpg", "png", "gif", "pdf"]
         if link.split('.')[-1:][0] in unwantedExtensions:
             continue
         
         # Wiki-specific rules
-        unwantedTags = ["/Category:", "/File:", "/Talk:", "/User", "/Blog:", "/User_blog:", "/Special:", "/Template:", 
-                        "/Template_talk:", "Wiki_talk:", "/Help:", "/Source:", "/Forum:", "/Forum_talk:", "/ru/", "/es/", 
-                        "/ja/", "/de/", "/fi/", "/fr/", "/f/", "/pt-br/", "/uk/", "/he/", "/tr/", "/vi/", "/sv/", "/lt/", 
-                        "/pl/", "/hu/", "/ko/", "/da/"]
-        unwantedLanguages = ["/es", "/de", "/ja", "/fr", "/zh", "/pl", "/ru", "/nl", "/uk", "/ko", "/it", "/hu", "/sv", 
-                            "/cs", "/ms", "/da"]
         if any(tag in link for tag in unwantedTags):
             continue
         if link[-3:] in unwantedLanguages:
@@ -212,3 +194,13 @@ def cleanLinks(links, pageURL):
         # Link has passed through all filters and is suitable to be appended to queue
         if not redis_utils.hasBeenVisited(links[index]):
             redis_utils.addToQueue(links[index])
+            
+            
+def currentlyProcessing():
+    '''
+    Checks if Celery worker still has active tasks. If so, returns the list.
+    '''
+    if activeTasksDict := app.control.inspect().active():
+        return list(activeTasksDict.items())[0][1]
+    else:
+        return 0
