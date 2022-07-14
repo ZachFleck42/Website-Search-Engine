@@ -26,7 +26,7 @@ services:
       - 8080:8080
     volumes: 
       - ./app:/app
-    command: celery -A crawler worker --loglevel=info
+    command: tail -F anything
     
 volumes: 
   database:

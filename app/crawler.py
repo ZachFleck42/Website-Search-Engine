@@ -1,26 +1,24 @@
 import nltk
 import re
-import redis_utils
 import requests
-import time
 from bs4 import BeautifulSoup
-from celery import Celery
+from collections import deque
 from database_utils import appendData, createTable
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from urllib.parse import urlparse
 
 requestHeaders = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'}
-app = Celery('Search_Engine', broker='redis://redis:6379/1')
-app.conf.result_backend = 'redis://redis:6379/1'
-
+visitedURLs = set()
+urls = deque([])
 
 def crawlWebsite(initialURL, databaseTable):
     '''
     Parent function for connecting to and scraping/storing data from an entire website.
     '''
     # Add the initial URL to the queue
-    redis_utils.addToQueue(initialURL)
+    urls.append(initialURL)
+    visitedCount = 0
     
     # Create a table in the database for the website
     createTable(databaseTable)
@@ -30,26 +28,22 @@ def crawlWebsite(initialURL, databaseTable):
     nltk.download('punkt')
     
     # While there are still links in the queue...
-    while ((redis_utils.getQueueCount()) > 0) or (currentlyProcessing()):
-        if url := redis_utils.popFromQueue():
-            redis_utils.markVisited(url)
-            print(f"Sending to Celery for processing: {url}")
-            processURL.delay(url, databaseTable)
-        else:
-            time.sleep(5)
-            continue
+    while urls:
+        url = urls.popleft()
+        processURL(url, databaseTable)
+        visitedCount += 1
         
     # Return the total number of webpages visited
-    return redis_utils.getVisitedCount()
+    return visitedCount
     
-    
-@app.task
+
 def processURL(url, databaseTable):
     '''
     Parent function for connecting to and scraping/storing data from an individual webpage.
     Returns 1 if page was processed without error.
     '''
     print(f"Processing {url} ...")
+    visitedURLs.add(url)
     
     # Connect to the URL and get its HTML source
     if not (pageHTML := getHTML(url)):
@@ -59,12 +53,15 @@ def processURL(url, databaseTable):
     # Parse the page and scrape it for data and additional links
     parsedPage = BeautifulSoup(pageHTML, 'html.parser')
     pageData = scrapeData(parsedPage)
-    getLinks(url, parsedPage)
-    
+
     # Append data to the database
     if not appendData(url, pageData[0], pageData[1], databaseTable):
         print(f"ERROR: Could not append data from {url}")
         return 0
+        
+    if pageLinks := getLinks(url, parsedPage):
+        for link in pageLinks:
+            urls.append(link)
     
     return 1
 
@@ -125,10 +122,12 @@ def getLinks(url, parsedPage):
 
     # Filter unwanted links. Append all others to the queue.
     if links:
-        filterLinks(links, url)
+        return cleanLinks(links, url)
+    else:
+        return []
 
 
-def filterLinks(links, pageURL):
+def cleanLinks(links, pageURL):
     '''
     Accepts a list of raw links/references pulled from a webpage's <a> tags.
     Passes links through a series of filters to prune unwanted links.
@@ -141,7 +140,8 @@ def filterLinks(links, pageURL):
     unwantedLanguages = ["/es", "/de", "/ja", "/fr", "/zh", "/pl", "/ru", "/nl", "/uk", "/ko", "/it", "/hu", "/sv", 
                         "/cs", "/ms", "/da"]
     unwantedExtensions = ["jpg", "png", "gif", "pdf"]
-                        
+              
+    cleanedLinks = []          
     for index, link in enumerate(links):
         # Ignore any links to the current page
         if link == '/':
@@ -191,9 +191,16 @@ def filterLinks(links, pageURL):
         if urlparse(links[index]).scheme != "https":
             links[index] = "https" + links[index][4:]
             
+        if links[index] in visitedURLs:
+            continue
+        
+        if links[index] in urls:
+            continue
+            
         # Link has passed through all filters and is suitable to be appended to queue
-        if not redis_utils.hasBeenVisited(links[index]):
-            redis_utils.addToQueue(links[index])
+        cleanedLinks.append(links[index])
+    
+    return list(set(cleanedLinks))
             
             
 def currentlyProcessing():

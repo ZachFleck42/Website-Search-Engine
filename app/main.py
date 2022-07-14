@@ -35,7 +35,7 @@ if __name__ == "__main__":
         startCrawlTime = time.time()
         webpageVisitCount = crawlWebsite(initialURL, tableName)
         stopCrawlTime = time.time()
-        print(f"Crawled {webpageVisitCount} pages in {((stopCrawlTime - startCrawlTime) - 5):.2f} seconds.")
+        print(f"Crawled {webpageVisitCount} pages in {(stopCrawlTime - startCrawlTime):.2f} seconds.")
 
     print("--------------------")
     # Begin searching the website
