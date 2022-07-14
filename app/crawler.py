@@ -18,6 +18,8 @@ app.conf.result_backend = 'redis://redis:6379/1'
 def crawlWebsite(initialURL, databaseTable):
     '''
     Parent function for connecting to and scraping/storing data from an entire website.
+    Initializes queues, database connections, and asset downloads.
+    Returns the total number of webpages visited by the crawler.
     '''
     # Add the initial URL to the queue
     redis_utils.addToQueue(initialURL)
@@ -36,7 +38,7 @@ def crawlWebsite(initialURL, databaseTable):
             print(f"Sending to Celery for processing: {url}")
             processURL.delay(url, databaseTable)
         else:
-            time.sleep(5)
+            time.sleep(1)
             continue
         
     # Return the total number of webpages visited
@@ -191,15 +193,18 @@ def filterLinks(links, pageURL):
         # Only visit https:// URLs (not http://)
         if urlparse(links[index]).scheme != "https":
             links[index] = "https" + links[index][4:]
+        
+        # Ignore already visited URLs
+        if redis_utils.hasBeenVisited(links[index]):
+            continue
             
         # Link has passed through all filters and is suitable to be appended to queue
-        if not redis_utils.hasBeenVisited(links[index]):
-            redis_utils.addToQueue(links[index])
+        redis_utils.addToQueue(links[index])
             
             
 def currentlyProcessing():
     '''
-    Checks if Celery worker still has active tasks. If so, returns the list.
+    Checks if Celery worker still has active tasks. If so, returns the list of tasks.
     '''
     if activeTasksDict := app.control.inspect().active():
         return list(activeTasksDict.items())[0][1]

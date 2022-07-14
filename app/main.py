@@ -35,7 +35,7 @@ if __name__ == "__main__":
         startCrawlTime = time.time()
         webpageVisitCount = crawlWebsite(initialURL, tableName)
         stopCrawlTime = time.time()
-        print(f"Crawled {webpageVisitCount} pages in {((stopCrawlTime - startCrawlTime) - 5):.2f} seconds.")
+        print(f"Crawled {webpageVisitCount} pages in {(stopCrawlTime - startCrawlTime):.2f} seconds.")
 
     print("--------------------")
     # Begin searching the website
@@ -60,7 +60,7 @@ if __name__ == "__main__":
         print(f'Top 10 Results for the search term "{searchTerm}":\n')
         for result in searchResults[0:10]:
             if foundOnPage := result[1]: 
-                print(f"{result[0]:<40}", end='')
+                print(f"{result[0]:<60}", end='')
                 print(f"{foundOnPage} matches")
                 
         
