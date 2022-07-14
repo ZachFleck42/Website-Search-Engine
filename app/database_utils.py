@@ -11,7 +11,7 @@ def createTable(tableName):
     '''
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
-    databaseCursor.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_text VARCHAR);")
+    databaseCursor.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_desc VARCHAR, page_text VARCHAR);")
         .format(sql.Identifier(tableName)))
     databaseConnection.commit()
     
@@ -60,15 +60,16 @@ def getTableName(url):
         return pageHost.split('.', 1)[0]
     
     
-def appendData(url, pageTitle, pageText, tableName):
+def appendData(url, pageData, tableName):
     '''
     Appends specified data to the database.
     '''
+    pageTitle, pageDesc, pageText = pageData
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     cursor = databaseConnection.cursor()
-    cursor.execute(sql.SQL("INSERT INTO {} VALUES (%s, %s, %s);")
+    cursor.execute(sql.SQL("INSERT INTO {} VALUES (%s, %s, %s, %s);")
         .format(sql.Identifier(tableName)),
-        [url, pageTitle, pageText])
+        [url, pageTitle, pageDesc, pageText])
     
     databaseConnection.commit()
     databaseConnection.close()

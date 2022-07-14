@@ -14,14 +14,14 @@ def runSearch(tableName, userInput, searchMethod=1):
         ("pageTitle", No. of occurrences of userInput on page)
     '''
     # Read website data into the program from database
-    needle = userInput.lower()
     rows = fetchAllData(tableName)
+    needle = userInput.lower()
     
     # Store the search results in a dictionary
     searchResults = {}
     for row in rows:
         needleOccurrences = 0
-        haystack = row[2]
+        haystack = row[3]
         if searchMethod == 1:       # Search method is Python str.count() method
             needleOccurrences = (haystack.count(needle))
         elif searchMethod == 2:     # Search method is Boyer-Moore algorithm

@@ -19,14 +19,19 @@ services:
     
   app:
     build: .
+    command: celery -A crawler worker --loglevel=info
+    # command: python manage.py runserver 0.0.0.0:8000
+    volumes: 
+      - ./app:/app
+    ports:
+      - 8000:8000
+    environment:
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
     depends_on:
       - postgres
       - redis
-    ports:
-      - 8080:8080
-    volumes: 
-      - ./app:/app
-    command: celery -A crawler worker --loglevel=info
-    
+
 volumes: 
   database:

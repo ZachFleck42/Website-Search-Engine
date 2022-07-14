@@ -1,6 +1,7 @@
 ahocorapy
 beautifulsoup4
 celery
+Django
 nltk
 psycopg2
 redis

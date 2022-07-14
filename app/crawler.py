@@ -18,7 +18,7 @@ app.conf.result_backend = 'redis://redis:6379/1'
 def crawlWebsite(initialURL, databaseTable):
     '''
     Parent function for connecting to and scraping/storing data from an entire website.
-    Initializes queues, database connections, and asset downloads.
+    Initializes queue, database connections, and asset downloads.
     Returns the total number of webpages visited by the crawler.
     '''
     # Add the initial URL to the queue
@@ -64,7 +64,7 @@ def processURL(url, databaseTable):
     getLinks(url, parsedPage)
     
     # Append data to the database
-    if not appendData(url, pageData[0], pageData[1], databaseTable):
+    if not appendData(url, pageData, databaseTable):
         print(f"ERROR: Could not append data from {url}")
         return 0
     
@@ -89,12 +89,16 @@ def scrapeData(parsedPage):
     '''
     pageTitle = parsedPage.title.string
     pageText = parsedPage.get_text()
-    processedText = preProcessText(pageText)
+    pageDesc = str(parsedPage.find("meta", attrs={'name': 'description'}))[14:-21]
+    if not pageDesc:
+        pageDesc = "None"
+
+    processedPageText = preProcessPageText(pageText)
     
-    return (pageTitle, processedText)
+    return (pageTitle, pageDesc, processedPageText)
     
     
-def preProcessText(pageText):
+def preProcessPageText(pageText):
     '''
     Accepts the text of a webpage as a string and returns the 'cleaned' text.
     Removes extra whitespace, punctuation, and unwanted words.
@@ -140,7 +144,7 @@ def filterLinks(links, pageURL):
     unwantedTags = ["/Category:", "/File:", "/Talk:", "/User", "/Blog:", "/User_blog:", "/Special:", "/Template:", 
                     "/Template_talk:", "Wiki_talk:", "/Help:", "/Source:", "/Forum:", "/Forum_talk:", "/ru/", "/es/", 
                     "/ja/", "/de/", "/fi/", "/fr/", "/f/", "/pt-br/", "/uk/", "/he/", "/tr/", "/vi/", "/sv/", "/lt/", 
-                    "/pl/", "/hu/", "/ko/", "/da/"]
+                    "/pl/", "/hu/", "/ko/", "/da/", "/zh/", "/cs/", "/nl/", "/it/", "/el/", "/pt/", "/th/", "/id/"]
     unwantedLanguages = ["/es", "/de", "/ja", "/fr", "/zh", "/pl", "/ru", "/nl", "/uk", "/ko", "/it", "/hu", "/sv", 
                         "/cs", "/ms", "/da"]
     unwantedExtensions = ["jpg", "png", "gif", "pdf"]
