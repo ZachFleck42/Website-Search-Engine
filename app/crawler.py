@@ -46,19 +46,24 @@ def processURL(url, databaseTable):
     visitedURLs.add(url)
     
     # Connect to the URL and get its HTML source
+    print("Getting HTML...")
     if not (pageHTML := getHTML(url)):
         print(f"ERROR: Could not get HTML from {url}")
         return 0
     
     # Parse the page and scrape it for data and additional links
+    print("Parsing page...")
     parsedPage = BeautifulSoup(pageHTML, 'html.parser')
+    print("Scraping data...")
     pageData = scrapeData(parsedPage)
 
     # Append data to the database
+    print("Appending data to database...")
     if not appendData(url, pageData[0], pageData[1], databaseTable):
         print(f"ERROR: Could not append data from {url}")
         return 0
         
+    print("Appending links...")
     if pageLinks := getLinks(url, parsedPage):
         for link in pageLinks:
             urls.append(link)
@@ -84,6 +89,8 @@ def scrapeData(parsedPage):
     '''
     pageTitle = parsedPage.title.string
     pageText = parsedPage.get_text()
+    
+    print("Pre-processing text...")
     processedText = preProcessText(pageText)
     
     return (pageTitle, processedText)
@@ -104,7 +111,8 @@ def preProcessText(pageText):
     step3 = word_tokenize(step2)
     
     # Remove all stopwords from the text
-    step4 = [word for word in step3 if not word in stopwords.words() and "'" not in word]
+    stopWords = set(stopwords.words('english'))
+    step4 = [word for word in step3 if not word in stopWords]
     
     return " ".join(step4)
 
