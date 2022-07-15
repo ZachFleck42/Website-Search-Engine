@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}Search{% endblock %}
+
+{% block content %}
+
+<h3>crawledWebsite: {{crawledWebsite}}</h3>
+
+<form method="post">
+    {% csrf_token %}
+    Website to Crawl: <input type="text" name="input_url">
+    <input type="submit" value="Submit">
+</form>
+
+{{visitedWebpageCount}}
+
+{% endblock %}

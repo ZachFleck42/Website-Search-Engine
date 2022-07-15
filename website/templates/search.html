@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}Search{% endblock %}
+
+{% block content %}
+<h3>searchableWebsites: {{searchableWebsites}}</h3>
+<h3>searchWebsite: {{searchWebsite}}</h3>
+<h3>searchMethod: {{searchMethod}}
+<h3>searchTerm: {{searchTerm}}</h3>
+
+<form method="post">
+    {% csrf_token %}
+    <select name="input_website">
+        <option disabled selected value="">Website to Search</option>
+        {% for website in searchableWebsites %}
+            <option value="{{ website.0 }}">{{ website.0 }}</option>
+        {% endfor %}
+    </select>
+    <select name="input_method">
+        <option disabled selected value="">Search Method</option>
+        {% for method in searchMethods %}
+            <option value="{{ method.1 }}">{{ method.0 }}</option>
+        {% endfor %}
+    </select>
+    Search Term: <input type="text" name="input_search">
+    <input type="submit" value="Submit">
+</form>
+
+{{ searchResults }}
+
+{% endblock %}

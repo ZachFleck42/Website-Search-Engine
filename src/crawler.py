@@ -1,11 +1,11 @@
 import nltk
 import re
-import redis_utils
+import src.redis_utils as redis_utils
 import requests
 import time
 from bs4 import BeautifulSoup
 from celery import Celery
-from database_utils import appendData, createTable
+from src.database_utils import appendData, createTable
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from urllib.parse import urlparse

@@ -1,8 +1,8 @@
 from ahocorapy.keywordtree import KeywordTree
-from database_utils import fetchAllData
-from search_algorithms.boyer_moore import BMsearch
-from search_algorithms.knuth_morris_pratt import KMPsearch
-from search_algorithms.robin_karp import RKsearch
+from src.database_utils import fetchAllData
+from src.search_algorithms.boyer_moore import BMsearch
+from src.search_algorithms.knuth_morris_pratt import KMPsearch
+from src.search_algorithms.robin_karp import RKsearch
 
 
 def runSearch(tableName, userInput, searchMethod=1):
@@ -22,15 +22,15 @@ def runSearch(tableName, userInput, searchMethod=1):
     for row in rows:
         needleOccurrences = 0
         haystack = row[3]
-        if searchMethod == 1:       # Search method is Python str.count() method
+        if searchMethod == "COUNT":       # Search method is Python str.count() method
             needleOccurrences = (haystack.count(needle))
-        elif searchMethod == 2:     # Search method is Boyer-Moore algorithm
+        elif searchMethod == "BM":     # Search method is Boyer-Moore algorithm
             needleOccurrences = len(BMsearch(needle, haystack))
-        elif searchMethod == 3:     # Search method is Knuth-Morris-Pratt algorithm
+        elif searchMethod == "KMP":     # Search method is Knuth-Morris-Pratt algorithm
             needleOccurrences = len(KMPsearch(needle, haystack))
-        elif searchMethod == 4:     # Search method is Robin-Karp algorithm
+        elif searchMethod == "RK":     # Search method is Robin-Karp algorithm
             needleOccurrences = len(RKsearch(needle, haystack))
-        elif searchMethod == 5:     # Search method is Aho-Corasick algorithm
+        elif searchMethod == "AC":     # Search method is Aho-Corasick algorithm
             kwtree = KeywordTree(case_insensitive=True)
             kwtree.add(needle)
             kwtree.finalize()
