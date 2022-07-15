@@ -9,7 +9,7 @@
 <form method="post">
     {% csrf_token %}
     <select name="input_website">
-        <option disabled selected value="">Website to Search</option>
+        <option disabled selected value="">Website</option>
         {% for website in searchableWebsites %}
             <option value="{{ website.0 }}">{{ website.0 }}</option>
         {% endfor %}
@@ -33,7 +33,7 @@
     {% for result in searchResults %}
         <p>{{result.0}}................{{result.1}}</p>
     {% endfor %}
+    Search made in {{searchTime}} milliseconds
 {% endif %}
-
 
 {% endblock %}

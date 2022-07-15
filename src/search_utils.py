@@ -3,6 +3,7 @@ from src.database_utils import fetchAllData
 from src.search_algorithms.boyer_moore import BMsearch
 from src.search_algorithms.knuth_morris_pratt import KMPsearch
 from src.search_algorithms.robin_karp import RKsearch
+from time import time
 
 
 def runSearch(tableName, userInput, searchMethod=1):
@@ -14,6 +15,7 @@ def runSearch(tableName, userInput, searchMethod=1):
         ("pageTitle", No. of occurrences of userInput on page)
     '''
     # Read website data into the program from database
+    startSearchTime = time()
     rows = fetchAllData(tableName)
     needle = userInput.lower()
     
@@ -43,4 +45,5 @@ def runSearch(tableName, userInput, searchMethod=1):
             
     # Sort and return the list of results
     searchResultsSorted = sorted(searchResults.items(), key=lambda x: x[1], reverse=True)
-    return(searchResultsSorted)
+    searchTime = time() - startSearchTime
+    return(searchResultsSorted, searchTime)

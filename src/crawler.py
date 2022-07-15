@@ -2,12 +2,12 @@ import nltk
 import re
 import src.redis_utils as redis_utils
 import requests
-import time
 from bs4 import BeautifulSoup
 from celery import Celery
 from src.database_utils import appendData, createTable
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+from time import time
 from urllib.parse import urlparse
 
 requestHeaders = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'}
@@ -21,16 +21,16 @@ def crawlWebsite(initialURL, databaseTable):
     Initializes queue, database connections, and asset downloads.
     Returns the total number of webpages visited by the crawler.
     '''
-    startCrawlTime = time.time()
+    # Make sure necessary text-processing files are present
+    nltk.download('stopwords')
+    nltk.download('punkt')
+    
     # Add the initial URL to the queue
+    startCrawlTime = time()
     redis_utils.addToQueue(initialURL)
     
     # Create a table in the database for the website
     createTable(databaseTable)
-    
-    # Make sure necessary text-processing files are present
-    nltk.download('stopwords')
-    nltk.download('punkt')
     
     # While there are still links in the queue...
     while ((redis_utils.getQueueCount()) > 0) or (currentlyProcessing()):
@@ -38,14 +38,10 @@ def crawlWebsite(initialURL, databaseTable):
             redis_utils.markVisited(url)
             print(f"Sending to Celery for processing: {url}")
             processURL.delay(url, databaseTable)
-        else:
-            time.sleep(1)
-            continue
     
     # Return the total number of webpages visited and the time it took to crawl them
     webpageVisitCount = redis_utils.getVisitedCount()
-    stopCrawlTime = time.time()
-    crawlTime = stopCrawlTime - startCrawlTime
+    crawlTime = time() - startCrawlTime
     
     return (webpageVisitCount, crawlTime)
     

@@ -13,7 +13,7 @@
     <input type="submit" value="Submit">
 </form>
 
-{% if renderArguments %}
+{% if crawledURL %}
     <br>
     Successfully crawled {{crawledURL}} . Visited {{webpageVisitCount}} pages in {{crawlTime}} seconds.
 {% endif %}

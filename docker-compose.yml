@@ -3,14 +3,14 @@ version: '3.9'
 services:
   postgres:
     image: postgres:14.4
+    volumes:
+      - ./data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=searchEngineDb
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     ports:
       - 5432:5432
-    volumes:
-      - ./data:/data
 
   redis:
     image: redis:7.0
@@ -20,7 +20,8 @@ services:
   app:
     build: .
     command: bash -c "
-      celery -A src.crawler worker --loglevel=info --detach  &&
+      python manage.py migrate &&
+      celery -A src.crawler worker --detach  &&
       python manage.py runserver 0.0.0.0:8000"
     volumes: 
       - .:/search_engine
@@ -33,6 +34,3 @@ services:
     depends_on:
       - postgres
       - redis
-
-volumes: 
-  database:
