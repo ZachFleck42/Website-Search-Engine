@@ -12,7 +12,6 @@ SEARCH_CHOICES = (
 )
 
 
-
 # Create your views here.
 def sayHello(request):
     return render(request, 'hello.html', {'name':'Zach'})
@@ -20,10 +19,12 @@ def sayHello(request):
 def search(request):
     databaseTables = database_utils.getSearchableWebsites()
     if request.method == "POST":
-        searchMethod = request.POST.get('searchMethod')
-        searchTerm = request.POST.get('searchInput')
+        searchWebsite = request.POST.get('input_website')
+        searchMethod = request.POST.get('input_method')
+        searchTerm = request.POST.get('input_search')
     else:
         searchMethod = "Waiting on user selection..."
         searchTerm = "Waiting on user input..."
 
-    return render(request, 'search.html', {'searchTerm':searchTerm, 'searchMethods':SEARCH_CHOICES, 'searchMethod':searchMethod})
+
+    return render(request, 'search.html', {'searchTerm':searchTerm, 'searchMethods':SEARCH_CHOICES, 'searchMethod':searchMethod, 'searchableWebsites':databaseTables})
