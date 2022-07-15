@@ -19,10 +19,10 @@ services:
     
   app:
     build: .
-    command: celery -A crawler worker --loglevel=info
+    # command: celery -A crawler worker --loglevel=info
     # command: python manage.py runserver 0.0.0.0:8000
     volumes: 
-      - ./app:/app
+      - .:/search-engine
     ports:
       - 8000:8000
     environment:
