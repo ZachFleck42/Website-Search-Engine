@@ -10,7 +10,7 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - database:/data
+      - ./data:/data
 
   redis:
     image: redis:7.0
@@ -19,10 +19,10 @@ services:
     
   app:
     build: .
+    command: python manage.py runserver 0.0.0.0:8000
     # command: celery -A crawler worker --loglevel=info
-    # command: python manage.py runserver 0.0.0.0:8000
     volumes: 
-      - .:/search-engine
+      - .:/search_engine
     ports:
       - 8000:8000
     environment:

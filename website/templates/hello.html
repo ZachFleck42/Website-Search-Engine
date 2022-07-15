@@ -1,16 +1,11 @@
-<!DOCTYPE html>
+{% extends 'base.html' %}
 
-<html lang="en">
-    <head>
-        <title>
-            Hello title
-        </title>
-    </head>
-    <body>
-        {% if name %}
-            <h1 style="text-align: center;">Hello {{name}}</h1>
-        {% else %}
-            <h1 style="text-align: center;">Hello world</h1>
-        {% endif %}
-    </body>
-</html>
+{% block title %}Hello{% endblock %}
+
+{% block content %}
+    {% if name %}
+    <h1 style="text-align: center;">Hello {{name}}</h1>
+    {% else %}
+    <h1 style="text-align: center;">Hello world</h1>
+    {% endif %}
+{% endblock %}
