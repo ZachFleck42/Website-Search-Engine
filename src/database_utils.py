@@ -11,9 +11,12 @@ def createTable(tableName):
     '''
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
+    
     databaseCursor.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_desc VARCHAR, page_text VARCHAR);")
         .format(sql.Identifier(tableName)))
+        
     databaseConnection.commit()
+    databaseConnection.close()
     
     
 def dropTable(tableName):
@@ -22,30 +25,12 @@ def dropTable(tableName):
     '''
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
+    
     databaseCursor.execute(sql.SQL("DROP TABLE {};")
         .format(sql.Identifier(tableName)))
+        
     databaseConnection.commit()
     databaseConnection.close()
-
-
-def tableExists(tableName):
-    '''
-    Checks to see if a table with name {tableName} already exists in database.
-    Returns True if found, False if not.
-    '''
-    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
-    databaseCursor = databaseConnection.cursor()
-    databaseCursor.execute("""
-        SELECT COUNT(*)
-        FROM information_schema.tables
-        WHERE table_name = '{0}'
-        """.format(tableName.replace('\'', '\'\'')))
-    if databaseCursor.fetchone()[0] == 1:
-        databaseConnection.close()
-        return True
-    
-    databaseConnection.close()
-    return False
 
 
 def getTableName(url):
@@ -59,14 +44,37 @@ def getTableName(url):
     else:
         return pageHost.split('.', 1)[0]
     
+
+def tableExists(tableName):
+    '''
+    Checks to see if a table with name {tableName} already exists in database.
+    Returns True if found, False if not.
+    '''
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
+    databaseCursor = databaseConnection.cursor()
+    
+    databaseCursor.execute("""
+        SELECT COUNT(*)
+        FROM information_schema.tables
+        WHERE table_name = '{0}'
+        """.format(tableName.replace('\'', '\'\'')))
+        
+    if databaseCursor.fetchone()[0] == 1:
+        databaseConnection.close()
+        return True
+    
+    databaseConnection.close()
+    return False
+
     
 def appendData(url, pageData, tableName):
     '''
     Appends specified data to the database.
     '''
-    pageTitle, pageDesc, pageText = pageData
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     cursor = databaseConnection.cursor()
+    
+    pageTitle, pageDesc, pageText = pageData
     cursor.execute(sql.SQL("INSERT INTO {} VALUES (%s, %s, %s, %s);")
         .format(sql.Identifier(tableName)),
         [url, pageTitle, pageDesc, pageText])
@@ -82,7 +90,19 @@ def fetchAllData(tableName):
     '''
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
+    
     databaseCursor.execute(sql.SQL("SELECT * FROM {};").format(sql.Identifier(tableName)))
     data = databaseCursor.fetchall()
+    
     databaseConnection.close()
     return data
+    
+def getSearchableWebsites():
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
+    databaseCursor = databaseConnection.cursor()
+    
+    databaseCursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
+    databaseTables = databaseCursor.fetchall()
+    
+    databaseConnection.close()
+    return databaseTables
