@@ -4,7 +4,6 @@ from src.crawler import crawlWebsite
 from src.database_utils import getTableName, getSearchableWebsites
 from src.search_utils import runSearch
 
-
 SEARCH_CHOICES = (
     ('Python str.count()','COUNT'),
     ('Boyer-Moore', 'BM'),
@@ -13,45 +12,39 @@ SEARCH_CHOICES = (
     ('Aho-Corasick','AC'),
 )
 
-
-# Create your views here.
 def sayHello(request):
     return render(request, 'hello.html', {'name':'Zach'})
     
 def search(request):
-    databaseTables = getSearchableWebsites()
+    renderArguments = {}
+    renderArguments['searchableWebsites'] = getSearchableWebsites()
+    renderArguments['searchMethods'] = (
+        ('Python str.count()','COUNT'),
+        ('Boyer-Moore', 'BM'),
+        ('Knuth-Morris-Pratt','KMP'),
+        ('Robin-Karp','RK'),
+        ('Aho-Corasick','AC'),
+    )
     
     if request.method == "POST":
-        searchWebsite = request.POST.get('input_website')
-        searchMethod = request.POST.get('input_method')
-        searchTerm = request.POST.get('input_search')
-        searchResults = runSearch(searchWebsite, searchTerm, searchMethod)
-    else:
-        searchWebsite = "Waiting on user selection..."
-        searchMethod = "Waiting on user selection..."
-        searchTerm = "Waiting on user input..."
-        searchResults = "None"
+        renderArguments['searchWebsite'] = request.POST.get('input_website')
+        renderArguments['searchMethod'] = request.POST.get('input_method')
+        renderArguments['searchTerm'] = request.POST.get('input_search')
+        renderArguments['searchResults'] = runSearch(renderArguments['searchWebsite'], renderArguments['searchTerm'], renderArguments['searchMethod'])
 
-    return render(request, 'search.html', {
-        'searchableWebsites':databaseTables, 
-        'searchMethods':SEARCH_CHOICES,
-        'searchMethod':searchMethod, 
-        'searchWebsite': searchWebsite, 
-        'searchTerm':searchTerm, 
-        'searchResults': searchResults})
+    return render(request, 'search.html', renderArguments)
+
     
 def crawl(request):
-    if request.method == "POST":
-        crawledWebsite = request.POST.get('input_url')
-        tableName = getTableName(crawledWebsite)
-        webpageVisitCount, crawlTime = crawlWebsite(crawledWebsite, tableName)
-    else:
-        crawledWebsite = "Waiting on user input..."
-        webpageVisitCount = "0"
-        crawlTime = "0"
+    renderArguments = {}
     
-    return render(request, 'crawl.html', {
-        'crawledWebsite':crawledWebsite, 
-        'webpageVisitCount':webpageVisitCount,
-        'crawlTime':crawlTime,
-    })
+    if request.method == "POST":
+        websiteURL = request.POST.get('input_url')
+        tableName = getTableName(websiteURL)
+        webpageVisitCount, crawlTime = crawlWebsite(websiteURL, tableName)
+        
+        renderArguments['crawledURL'] = websiteURL
+        renderArguments['webpageVisitCount'] = webpageVisitCount
+        renderArguments['crawlTime'] = crawlTime
+
+    return render(request, 'crawl.html', renderArguments)

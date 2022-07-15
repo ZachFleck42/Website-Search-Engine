@@ -4,11 +4,8 @@
 
 {% block content %}
 <a href="/crawl">Go to crawl</a>
-<h3>searchableWebsites: {{searchableWebsites}}</h3>
-<h3>searchWebsite: {{searchWebsite}}</h3>
-<h3>searchMethod: {{searchMethod}}
-<h3>searchTerm: {{searchTerm}}</h3>
 
+<h3>searchableWebsites: {{searchableWebsites}}</h3>
 <form method="post">
     {% csrf_token %}
     <select name="input_website">
@@ -27,7 +24,16 @@
     <input type="submit" value="Submit">
 </form>
 
-{{ searchResults }}
+{% if searchResults %}
+    <h3>searchWebsite: {{searchWebsite}}</h3>
+    <h3>searchMethod: {{searchMethod}}
+    <h3>searchTerm: {{searchTerm}}</h3>
+    <br>
+    <h3>searchResults:</h3>
+    {% for result in searchResults %}
+        <p>{{result.0}}................{{result.1}}</p>
+    {% endfor %}
+{% endif %}
 
 
 {% endblock %}

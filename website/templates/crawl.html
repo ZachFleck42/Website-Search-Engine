@@ -5,15 +5,17 @@
 {% block content %}
 
 <a href="/search">Go to search</a>
-
-<h3>crawledWebsite: {{crawledWebsite}}</h3>
-
+<br>
+<br>
 <form method="post">
     {% csrf_token %}
     Website to Crawl: <input type="text" name="input_url">
     <input type="submit" value="Submit">
 </form>
 
-crawled {{webpageVisitCount}} pages in {{crawlTime}} seconds
+{% if renderArguments %}
+    <br>
+    Successfully crawled {{crawledURL}} . Visited {{webpageVisitCount}} pages in {{crawlTime}} seconds.
+{% endif %}
 
 {% endblock %}
