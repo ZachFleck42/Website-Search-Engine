@@ -19,8 +19,9 @@ services:
     
   app:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
-    # command: celery -A crawler worker --loglevel=info
+    command: bash -c "
+      celery -A src.crawler worker --loglevel=info --detach  &&
+      python manage.py runserver 0.0.0.0:8000"
     volumes: 
       - .:/search_engine
     ports:

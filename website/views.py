@@ -31,17 +31,27 @@ def search(request):
         searchMethod = "Waiting on user selection..."
         searchTerm = "Waiting on user input..."
         searchResults = "None"
-        
 
-    return render(request, 'search.html', {'searchTerm':searchTerm, 'searchMethods':SEARCH_CHOICES, 'searchMethod':searchMethod, 'searchableWebsites':databaseTables, 'searchWebsite': searchWebsite, 'searchResults': searchResults})
+    return render(request, 'search.html', {
+        'searchableWebsites':databaseTables, 
+        'searchMethods':SEARCH_CHOICES,
+        'searchMethod':searchMethod, 
+        'searchWebsite': searchWebsite, 
+        'searchTerm':searchTerm, 
+        'searchResults': searchResults})
     
 def crawl(request):
     if request.method == "POST":
         crawledWebsite = request.POST.get('input_url')
         tableName = getTableName(crawledWebsite)
-        visitedWebpageCount = crawlWebsite(crawledWebsite, tableName)
+        webpageVisitCount, crawlTime = crawlWebsite(crawledWebsite, tableName)
     else:
         crawledWebsite = "Waiting on user input..."
-        visitedWebpageCount = "Hey"
+        webpageVisitCount = "0"
+        crawlTime = "0"
     
-    return render(request, 'crawl.html', {'crawledWebsite':crawledWebsite, 'visitedWebpageCount':visitedWebpageCount})
+    return render(request, 'crawl.html', {
+        'crawledWebsite':crawledWebsite, 
+        'webpageVisitCount':webpageVisitCount,
+        'crawlTime':crawlTime,
+    })

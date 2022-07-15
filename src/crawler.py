@@ -21,6 +21,7 @@ def crawlWebsite(initialURL, databaseTable):
     Initializes queue, database connections, and asset downloads.
     Returns the total number of webpages visited by the crawler.
     '''
+    startCrawlTime = time.time()
     # Add the initial URL to the queue
     redis_utils.addToQueue(initialURL)
     
@@ -40,9 +41,13 @@ def crawlWebsite(initialURL, databaseTable):
         else:
             time.sleep(1)
             continue
-        
-    # Return the total number of webpages visited
-    return redis_utils.getVisitedCount()
+    
+    # Return the total number of webpages visited and the time it took to crawl them
+    webpageVisitCount = redis_utils.getVisitedCount()
+    stopCrawlTime = time.time()
+    crawlTime = stopCrawlTime - startCrawlTime
+    
+    return (webpageVisitCount, crawlTime)
     
     
 @app.task
