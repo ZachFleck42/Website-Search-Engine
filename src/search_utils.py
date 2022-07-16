@@ -6,22 +6,23 @@ from src.search_algorithms.robin_karp import RKsearch
 from time import time
 
 
-def runSearch(tableName, userInput, searchMethod=1):
+def runSearch(tableName, userInput, searchMethod, numberOfResults=10):
     '''
     Parent function for running a search for userInput in tableName.
-    Also allows for the selection of one of five different search methods 
-        (default is python str.count() method)
-    Returns a sorted list of results, each taking the form:
-        ("pageTitle", No. of occurrences of userInput on page)
+    Also allows for the selection of one of five different search methods.
+    Returns a sorted list of lists of length numberOfResults, taking the form:
+        (numberOfMatches, pageURL, pageTitle)
     '''
     # Read website data into the program from database
     startSearchTime = time()
     websiteData = fetchAllData(tableName)
     needle = userInput.lower()
     
+    # Keep track of page titles to prevent duplicate entries caused by redirects
+    searchTitles = []   
+        
     # Store the search results in a list of lists
     searchResults = []
-    searchTitles = []       # Keep track of visited 'titles' to account for redirects
     for pageData in websiteData:
         pageURL = pageData[0]
         pageTitle = pageData[1]
@@ -44,12 +45,11 @@ def runSearch(tableName, userInput, searchMethod=1):
             if resultsFound := kwtree.search_all(haystack):
                 numberOfMatches = sum(1 for result in resultsFound)
         
-        # If the page had matches and has not already been appended to results, add to searchResults
         if numberOfMatches > 0 and pageTitle not in searchTitles:
             searchResults.append((numberOfMatches, pageURL, pageTitle))
             searchTitles.append(pageTitle)
-        
+            
     # Sort and return the list of results
-    searchResultsSorted = sorted(searchResults, reverse=True)
+    searchResultsSorted = (sorted(searchResults, reverse=True))[:numberOfResults]
     searchTime = time() - startSearchTime
     return(searchResultsSorted, searchTime)

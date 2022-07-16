@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from src.crawler import crawlWebsite
-from src.database_utils import getTableName, getSearchableWebsites
+from src.database_utils import getTableName, getSearchableWebsites, getRowCount
 from src.search_utils import runSearch
 
 
@@ -31,17 +31,24 @@ def search(request):
     renderArguments = {}
     renderArguments['searchMethods'] = list(searchMethods)
     renderArguments['searchableWebsites'] = getSearchableWebsites()
+    renderArguments['amountOfResultsOptions'] = (10, 50, 100, 1000)
     
     if request.method == "POST":
         renderArguments['searchWebsite'] = request.POST.get('input_website')
         renderArguments['searchMethod'] = request.POST.get('input_method')
         renderArguments['searchMethodName'] = ([method for method in searchMethods if method[1] == renderArguments['searchMethod']])[0][0]  # Don't even worry about it
         renderArguments['searchTerm'] = request.POST.get('input_search')
-        
-        searchResults, searchTime = runSearch(renderArguments['searchWebsite'], renderArguments['searchTerm'], renderArguments['searchMethod'])
+        renderArguments['amountOfResults'] = int(request.POST.get('input_amount'))
+
+        searchResults, searchTime = runSearch(renderArguments['searchWebsite'], renderArguments['searchTerm'], renderArguments['searchMethod'], renderArguments['amountOfResults'])
         
         renderArguments['searchResults'] = searchResults
         renderArguments['searchTime'] = round((searchTime * 1000), 2)
         renderArguments['foundPages'] = len(searchResults)
+        renderArguments['totalPages'] = getRowCount(renderArguments['searchWebsite'])
         
     return render(request, 'search.html', renderArguments)
+
+
+def data(request):
+    pass

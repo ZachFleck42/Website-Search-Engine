@@ -97,7 +97,7 @@ def scrapeData(parsedPage):
     pageText = parsedPage.get_text()
     pageDesc = str(parsedPage.find("meta", attrs={'name': 'description'}))[14:-21]
     if not pageDesc:
-        pageDesc = "None"
+        pageDesc = "No page description available."
 
     processedPageText = preProcessPageText(pageText)
     

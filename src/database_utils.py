@@ -107,3 +107,14 @@ def getSearchableWebsites():
     
     databaseConnection.close()
     return databaseTables
+    
+    
+def getRowCount(tableName):
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
+    databaseCursor = databaseConnection.cursor()
+    
+    databaseCursor.execute(sql.SQL("SELECT COUNT(*) FROM {};").format(sql.Identifier(tableName)))
+    rowCount = databaseCursor.fetchall()
+    
+    databaseConnection.close()
+    return rowCount[0][0]

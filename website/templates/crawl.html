@@ -1,14 +1,15 @@
 {% extends 'base.html' %}
 {% block title %}Search{% endblock %}
-
 {% block content %}
 <div class="container">
+<a href="/crawl">Go to crawl</a>
 <a href="/search">Go to search</a>
 <br>
 <br>
 <form method="post">
     {% csrf_token %}
-    Website to Crawl: <input autocomplete="off" name="input_url" placeholder="URL" type="text">
+    <p>Enter the URL of the website you'd like to crawl and store in the database:</p>
+    <input autocomplete="off" name="input_url" placeholder="URL" type="text">
     <input type="submit" value="Submit">
 </form>
 

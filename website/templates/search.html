@@ -1,15 +1,14 @@
 {% extends 'base.html' %}
 {% block title %}Search{% endblock %}
-
 {% block content %}
 <div class="container">
 <a href="/crawl">Go to crawl</a>
-<a href="/search">Go to search?</a>
+<a href="/search">Go to search</a>
 <br>
 <br>
 <form method="post">
     {% csrf_token %}
-    
+    <p>Enter the website, search method, and term you'd like to search for:</p>
     <select name="input_website">
         {% if searchWebsite %}
             <option selected value="{{searchWebsite}}">{{searchWebsite}}</option>
@@ -19,7 +18,7 @@
         
         {% for website in searchableWebsites %}
             {% if website.0 != searchWebsite %}
-                <option value="{{ website.0 }}">{{ website.0 }}</option>
+                <option value="{{website.0}}">{{website.0}}</option>
             {% endif %}
         {% endfor %}
     </select>
@@ -33,7 +32,21 @@
         
         {% for method in searchMethods %}
             {% if method.1 != searchMethod %}
-                <option value="{{ method.1 }}">{{ method.0 }}</option>
+                <option value="{{method.1}}">{{method.0}}</option>
+            {% endif %}
+        {% endfor %}
+    </select>
+    
+    <select name="input_amount">
+        {% if amountOfResults %}
+            <option selected value="{{amountOfResults}}">{{amountOfResults}}</option>
+        {% else %}
+            <option disabled selected value="">No. of Results to Display</option>
+        {% endif %}
+        
+        {% for option in amountOfResultsOptions %}
+            {% if option != amountOfResults %}
+                <option value="{{option}}">{{option}}</option>
             {% endif %}
         {% endfor %}
     </select>
@@ -42,26 +55,30 @@
     <input type="submit" value="Search">
 </form>
 </div>
+<br>
 {% if searchWebsite %}
 <div class="container">
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th scope="col">Page Title / URL</th>
-            <th scope="col">Number of Matches Found</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for result in searchResults %}
-        <tr>
-            <td><a href="{{result.1}}" target="_blank" rel="noopener noreferrer">{{result.2}}</a></td>
-            <td>{{result.0}}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-Found "{{searchTerm}}" on {{foundPages}} pages in {{searchTime}} milliseconds
-</div>
+    {% if searchResults %}    
+    <p>Top {{amountOfResults}} results for "{{searchTerm}}" (searched {{totalPages}} pages in {{searchTime}} milliseconds):</p>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th scope="col">Page Title / URL</th>
+                <th scope="col">Number of Matches Found</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in searchResults %}
+            <tr>
+                <td><a href="{{result.1}}" target="_blank" rel="noopener noreferrer">{{result.2}}</a></td>
+                <td>{{result.0}}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+        <p>No results found for "{{searchTerm}}" (searched {{totalPages}} pages in {{searchTime}} milliseconds)</p>
+    {% endif %}
 {% endif %}
-
 {% endblock %}
