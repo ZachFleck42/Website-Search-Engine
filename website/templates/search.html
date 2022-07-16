@@ -1,14 +1,15 @@
 {% extends 'base.html' %}
-
 {% block title %}Search{% endblock %}
 
 {% block content %}
+<div class="container">
 <a href="/crawl">Go to crawl</a>
+<a href="/search">Go to search?</a>
 <br>
 <br>
-<h3>searchWebsite is {{searchWebsite}}</h3>
 <form method="post">
     {% csrf_token %}
+    
     <select name="input_website">
         {% if searchWebsite %}
             <option selected value="{{searchWebsite}}">{{searchWebsite}}</option>
@@ -22,11 +23,12 @@
             {% endif %}
         {% endfor %}
     </select>
+    
     <select name="input_method">
         {% if searchMethod %}
             <option selected value="{{searchMethod}}">{{searchMethodName}}</option>
         {% else %}
-            <option disabled selected value="">Search Method</option>
+            <option disabled selected value="">Search method</option>
         {% endif %}
         
         {% for method in searchMethods %}
@@ -35,23 +37,31 @@
             {% endif %}
         {% endfor %}
     </select>
-    Search Term: <input type="text" name="input_search">
-    <input type="submit" value="Submit">
+    
+    <input autocomplete="off" name="input_search" placeholder="Search term" type="text">
+    <input type="submit" value="Search">
 </form>
-
+</div>
 {% if searchWebsite %}
-    <h3>searchWebsite: {{searchWebsite}}</h3>
-    <h3>searchMethod: {{searchMethod}}
-    <h3>searchTerm: {{searchTerm}}</h3>
-    <br>
-    <h3>searchResults:</h3>
-    {% for result in searchResults %}
-        <br>
-        <a href="{{result.1}}">{{result.2}}................{{result.0}}</a>
-        <br>
-    {% endfor %}
-    <br>
-    Found "{{searchTerm}}" on {{foundPages}} pages in {{searchTime}} milliseconds
+<div class="container">
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th scope="col">Page Title / URL</th>
+            <th scope="col">Number of Matches Found</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for result in searchResults %}
+        <tr>
+            <td><a href="{{result.1}}" target="_blank" rel="noopener noreferrer">{{result.2}}</a></td>
+            <td>{{result.0}}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+Found "{{searchTerm}}" on {{foundPages}} pages in {{searchTime}} milliseconds
+</div>
 {% endif %}
 
 {% endblock %}

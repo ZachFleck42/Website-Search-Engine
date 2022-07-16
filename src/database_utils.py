@@ -96,7 +96,8 @@ def fetchAllData(tableName):
     
     databaseConnection.close()
     return data
-    
+
+
 def getSearchableWebsites():
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()

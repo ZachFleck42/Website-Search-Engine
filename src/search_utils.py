@@ -16,14 +16,19 @@ def runSearch(tableName, userInput, searchMethod=1):
     '''
     # Read website data into the program from database
     startSearchTime = time()
-    rows = fetchAllData(tableName)
+    websiteData = fetchAllData(tableName)
     needle = userInput.lower()
     
-    # Store the search results in a dictionary
+    # Store the search results in a list of lists
     searchResults = []
-    for row in rows:
+    searchTitles = []       # Keep track of visited 'titles' to account for redirects
+    for pageData in websiteData:
+        pageURL = pageData[0]
+        pageTitle = pageData[1]
+        pageDesc = pageData[2]
+        haystack = pageData[3]
+        
         numberOfMatches = 0
-        haystack = row[3]
         if searchMethod == "COUNT":       # Search method is Python str.count() method
             numberOfMatches = (haystack.count(needle))
         elif searchMethod == "BM":     # Search method is Boyer-Moore algorithm
@@ -39,12 +44,11 @@ def runSearch(tableName, userInput, searchMethod=1):
             if resultsFound := kwtree.search_all(haystack):
                 numberOfMatches = sum(1 for result in resultsFound)
         
-        # Append results to the dictionary
-        pageURL = row[0]
-        pageTitle = row[1]
-        if numberOfMatches:
-            searchResults.append ((numberOfMatches, pageURL, pageTitle))
-            
+        # If the page had matches and has not already been appended to results, add to searchResults
+        if numberOfMatches > 0 and pageTitle not in searchTitles:
+            searchResults.append((numberOfMatches, pageURL, pageTitle))
+            searchTitles.append(pageTitle)
+        
     # Sort and return the list of results
     searchResultsSorted = sorted(searchResults, reverse=True)
     searchTime = time() - startSearchTime
