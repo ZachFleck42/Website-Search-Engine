@@ -4,20 +4,35 @@
 
 {% block content %}
 <a href="/crawl">Go to crawl</a>
-
-<h3>searchableWebsites: {{searchableWebsites}}</h3>
+<br>
+<br>
+<h3>searchWebsite is {{searchWebsite}}</h3>
 <form method="post">
     {% csrf_token %}
     <select name="input_website">
-        <option disabled selected value="">Website</option>
+        {% if searchWebsite %}
+            <option selected value="{{searchWebsite}}">{{searchWebsite}}</option>
+        {% else %}
+            <option disabled selected value="">Website</option>
+        {% endif %}
+        
         {% for website in searchableWebsites %}
-            <option value="{{ website.0 }}">{{ website.0 }}</option>
+            {% if website.0 != searchWebsite %}
+                <option value="{{ website.0 }}">{{ website.0 }}</option>
+            {% endif %}
         {% endfor %}
     </select>
     <select name="input_method">
-        <option disabled selected value="">Search Method</option>
+        {% if searchMethod %}
+            <option selected value="{{searchMethod}}">{{previousMethod}}</option>
+        {% else %}
+            <option disabled selected value="">Search Method</option>
+        {% endif %}
+        
         {% for method in searchMethods %}
-            <option value="{{ method.1 }}">{{ method.0 }}</option>
+            {% if method.1 != searchMethod %}
+                <option value="{{ method.1 }}">{{ method.0 }}</option>
+            {% endif %}
         {% endfor %}
     </select>
     Search Term: <input type="text" name="input_search">
@@ -36,7 +51,7 @@
         <br>
     {% endfor %}
     <br>
-    Search made in {{searchTime}} milliseconds
+    Found "{{searchTerm}}" on {{foundPages}} pages in {{searchTime}} milliseconds
 {% endif %}
 
 {% endblock %}

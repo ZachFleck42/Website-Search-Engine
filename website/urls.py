@@ -4,6 +4,6 @@ from django.urls import path
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('search/', views.search),
-    path('crawl/', views.crawl),
+    path('search/', views.search, name='search'),
+    path('crawl/', views.crawl, name='crawl'),
 ]
