@@ -20,28 +20,26 @@ def crawl(request):
     
     
 def search(request):
-    searchMethods = {
-        'Python str.count()': 'COUNT',
-        'Boyer-Moore': 'BM',
-        'Knuth-Morris-Pratt': 'KMP',
-        'Robin-Karp': 'RK',
-        'Aho-Corasick': 'AC',
-    }
+    searchMethods = (
+        ('Python str.count()','COUNT'),
+        ('Boyer-Moore', 'BM'),
+        ('Knuth-Morris-Pratt','KMP'),
+        ('Robin-Karp','RK'),
+        ('Aho-Corasick','AC'),
+    )
     
     renderArguments = {}
-    renderArguments['searchMethods'] = searchMethods
-    renderArguments['searchMethodNames'] = searchMethods.keys()
-    renderArguments['searchMethodPosts'] = searchMethods.values()
-    
-    
+    renderArguments['searchMethods'] = list(searchMethods)
     renderArguments['searchableWebsites'] = getSearchableWebsites()
     
     if request.method == "POST":
         renderArguments['searchWebsite'] = request.POST.get('input_website')
         renderArguments['searchMethod'] = request.POST.get('input_method')
+        renderArguments['searchMethodName'] = ([method for method in searchMethods if method[1] == renderArguments['searchMethod']])[0][0]  # Don't even worry about it
         renderArguments['searchTerm'] = request.POST.get('input_search')
         
         searchResults, searchTime = runSearch(renderArguments['searchWebsite'], renderArguments['searchTerm'], renderArguments['searchMethod'])
+        
         renderArguments['searchResults'] = searchResults
         renderArguments['searchTime'] = round((searchTime * 1000), 2)
         renderArguments['foundPages'] = len(searchResults)

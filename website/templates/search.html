@@ -24,7 +24,7 @@
     </select>
     <select name="input_method">
         {% if searchMethod %}
-            <option selected value="{{searchMethod}}">{{previousMethod}}</option>
+            <option selected value="{{searchMethod}}">{{searchMethodName}}</option>
         {% else %}
             <option disabled selected value="">Search Method</option>
         {% endif %}
@@ -39,7 +39,7 @@
     <input type="submit" value="Submit">
 </form>
 
-{% if searchResults %}
+{% if searchWebsite %}
     <h3>searchWebsite: {{searchWebsite}}</h3>
     <h3>searchMethod: {{searchMethod}}
     <h3>searchTerm: {{searchTerm}}</h3>
