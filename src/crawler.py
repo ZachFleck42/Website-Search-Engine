@@ -4,7 +4,7 @@ import src.redis_utils as redis_utils
 import requests
 from bs4 import BeautifulSoup
 from celery import Celery
-from src.database_utils import appendData, createTable
+from src.database_utils import appendData, createTable, dropTable, tableExists
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from time import time
@@ -21,12 +21,17 @@ def crawlWebsite(initialURL, databaseTable):
     Initializes queue, database connections, and asset downloads.
     Returns the total number of webpages visited by the crawler.
     '''
+    # If data for website exists already, delete it and start fresh
+    if tableExists(databaseTable):
+        dropTable(databaseTable)
+    
     # Make sure necessary text-processing files are present
     nltk.download('stopwords')
     nltk.download('punkt')
     
     # Add the initial URL to the queue
     startCrawlTime = time()
+    redis_utils.clearCache()
     redis_utils.addToQueue(initialURL)
     
     # Create a table in the database for the website

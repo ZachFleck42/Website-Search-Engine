@@ -31,8 +31,11 @@
     <br>
     <h3>searchResults:</h3>
     {% for result in searchResults %}
-        <p>{{result.0}}................{{result.1}}</p>
+        <br>
+        <a href="{{result.1}}">{{result.2}}................{{result.0}}</a>
+        <br>
     {% endfor %}
+    <br>
     Search made in {{searchTime}} milliseconds
 {% endif %}
 
