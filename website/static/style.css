@@ -1,5 +1,5 @@
 .navbar, .navDiv{
-    background-color: #90E0EF;
+    background-color: #dee2e6;
 }
 
 .nav-item{
@@ -8,11 +8,11 @@
 }
 
 .active{
-    background-color: #48CAE4;
+    background-color: #ced4da;
 }
 
 .content{
-    background-color: #CAF0F8;
+    background-color: #f8f9fa;
     height: 100%;
     padding-bottom: 1px;
 }
