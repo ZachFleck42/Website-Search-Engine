@@ -1,84 +1,79 @@
 {% extends 'base.html' %}
 {% block title %}Search{% endblock %}
 {% block content %}
+<!-- <div class="container" style="background-color: coral"> -->
 <div class="container">
-<a href="/crawl">Go to crawl</a>
-<a href="/search">Go to search</a>
-<br>
-<br>
-<form method="post">
-    {% csrf_token %}
-    <p>Enter the website, search method, and term you'd like to search for:</p>
-    <select name="input_website">
-        {% if searchWebsite %}
-            <option selected value="{{searchWebsite}}">{{searchWebsite}}</option>
-        {% else %}
-            <option disabled selected value="">Website</option>
-        {% endif %}
-        
-        {% for website in searchableWebsites %}
-            {% if website.0 != searchWebsite %}
-                <option value="{{website.0}}">{{website.0}}</option>
+    <form method="post">
+        {% csrf_token %}
+        <p>Enter the website, search method, and term you'd like to search for:</p>
+        <select name="input_website">
+            {% if searchWebsite %}
+                <option selected value="{{searchWebsite}}">{{searchWebsite}}</option>
+            {% else %}
+                <option disabled selected value="">Website</option>
             {% endif %}
-        {% endfor %}
-    </select>
-    
-    <select name="input_method">
-        {% if searchMethod %}
-            <option selected value="{{searchMethod}}">{{searchMethodName}}</option>
-        {% else %}
-            <option disabled selected value="">Search method</option>
-        {% endif %}
-        
-        {% for method in searchMethods %}
-            {% if method.1 != searchMethod %}
-                <option value="{{method.1}}">{{method.0}}</option>
-            {% endif %}
-        {% endfor %}
-    </select>
-    
-    <select name="input_amount">
-        {% if amountOfResults %}
-            <option selected value="{{amountOfResults}}">{{amountOfResults}}</option>
-        {% else %}
-            <option disabled selected value="">No. of Results to Display</option>
-        {% endif %}
-        
-        {% for option in amountOfResultsOptions %}
-            {% if option != amountOfResults %}
-                <option value="{{option}}">{{option}}</option>
-            {% endif %}
-        {% endfor %}
-    </select>
-    
-    <input autocomplete="off" name="input_search" placeholder="Search term" type="text">
-    <input type="submit" value="Search">
-</form>
-</div>
-<br>
-{% if searchWebsite %}
-<div class="container">
-    {% if searchResults %}    
-    <p>Top {{amountOfResults}} results for "{{searchTerm}}" (searched {{totalPages}} pages in {{searchTime}} milliseconds):</p>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th scope="col">Page Title / URL</th>
-                <th scope="col">Number of Matches Found</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for result in searchResults %}
-            <tr>
-                <td><a href="{{result.1}}" target="_blank" rel="noopener noreferrer">{{result.2}}</a></td>
-                <td>{{result.0}}</td>
-            </tr>
+            
+            {% for website in searchableWebsites %}
+                {% if website.0 != searchWebsite %}
+                    <option value="{{website.0}}">{{website.0}}</option>
+                {% endif %}
             {% endfor %}
-        </tbody>
-    </table>
-    </div>
-    {% else %}
-        <p>No results found for "{{searchTerm}}" (searched {{totalPages}} pages in {{searchTime}} milliseconds)</p>
+        </select>
+        
+        <select name="input_method">
+            {% if searchMethod %}
+                <option selected value="{{searchMethod}}">{{searchMethodName}}</option>
+            {% else %}
+                <option disabled selected value="">Search method</option>
+            {% endif %}
+            
+            {% for method in searchMethods %}
+                {% if method.1 != searchMethod %}
+                    <option value="{{method.1}}">{{method.0}}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+        
+        <select name="input_amount">
+            {% if amountOfResults %}
+                <option selected value="{{amountOfResults}}">{{amountOfResults}}</option>
+            {% else %}
+                <option disabled selected value="">No. of Results to Display</option>
+            {% endif %}
+            
+            {% for option in amountOfResultsOptions %}
+                {% if option != amountOfResults %}
+                    <option value="{{option}}">{{option}}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+        
+        <input autocomplete="off" name="input_search" placeholder="Search term" type="text">
+        <input type="submit" value="Search">
+    </form>
+    
+    {% if searchWebsite %}
+        {% if searchResults %}    
+            <p>Top {{amountOfResults}} results for "{{searchTerm}}" (searched {{totalPages}} pages in {{searchTime}} milliseconds):</p>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th scope="col">Page Title / URL</th>
+                        <th scope="col">Number of Matches Found</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in searchResults %}
+                    <tr>
+                        <td><a href="{{result.1}}" target="_blank" rel="noopener noreferrer">{{result.2}}</a></td>
+                        <td>{{result.0}}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No results found for "{{searchTerm}}" (searched {{totalPages}} pages in {{searchTime}} milliseconds)</p>
+        {% endif %}
     {% endif %}
-{% endif %}
+</div>
 {% endblock %}
