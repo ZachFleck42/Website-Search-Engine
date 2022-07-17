@@ -50,5 +50,10 @@ def search(request):
     return render(request, 'search.html', renderArguments)
 
 
-def data(request):
-    pass
+def home(request):
+    return render(request, 'home.html')
+    
+
+def manageDatabase(request):
+    # TODO
+    return render(request, 'manage-database.html')

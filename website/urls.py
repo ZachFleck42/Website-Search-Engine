@@ -3,8 +3,9 @@ from django.contrib import admin
 from django.urls import path
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('search/', views.search, name='search'),
+    path('', views.home, name='home'),
     path('crawl/', views.crawl, name='crawl'),
-    path('data/', views.data, name='data')
+    path('search/', views.search, name='search'),
+    path('manage-database/', views.manageDatabase, name='manage-database'),
+    path('admin/', admin.site.urls),
 ]
