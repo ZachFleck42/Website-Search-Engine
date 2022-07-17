@@ -9,9 +9,11 @@
         <input autocomplete="off" name="input_url" placeholder="URL" type="text">
         <input type="submit" value="Submit">
     </form>
+    <br>
     {% if crawledURL %}
-        <br>
-        Successfully crawled "{{crawledURL}}". Visited {{webpageVisitCount}} pages in {{crawlTime}} seconds.
+        <p>Successfully crawled "{{crawledURL}}". Visited {{webpageVisitCount}} pages in {{crawlTime}} seconds.</p>
+    {% elif blankForm %}
+        <p>Error: URL field cannot be blank. Please enter a valid URL and try again.</p>
     {% endif %}
 </div>
 {% endblock %}

@@ -6,7 +6,9 @@
     <br>
     <form method="post">
         {% csrf_token %}
-        <p>Enter the website, search method, number of results to display, and the term you'd like to search for:</p>
+        <p>Enter the website, search method, a search term, and the number of results to display.</p>
+        <p>If not selected, 'Search method' will default to 'Python str.count()' and 'No. of Results to Display' will default to 10.</p>
+        <p>'Website' and 'Search term' fields <b>must</b> be filled out.</p>
         <select name="input_website">
             {% if searchWebsite %}
                 <option selected value="{{searchWebsite}}">{{searchWebsite}}</option>
@@ -35,6 +37,8 @@
             {% endfor %}
         </select>
         
+        <input autocomplete="off" name="input_search" placeholder="Search term" type="text">
+        
         <select name="input_amount">
             {% if amountOfResults %}
                 <option selected value="{{amountOfResults}}">{{amountOfResults}}</option>
@@ -48,14 +52,20 @@
                 {% endif %}
             {% endfor %}
         </select>
-        
-        <input autocomplete="off" name="input_search" placeholder="Search term" type="text">
         <input type="submit" value="Search">
     </form>
+    <br>
     
-    {% if searchWebsite %}
+    {% if noWebsite %}
+        <p>Error: No website input. Please select a website and try again.</p>
+    {% endif %}
+    
+    {% if noSearchTerm %}
+        <p>Error: No search term. Please input a search term and try again</p>
+    {% endif %}
+    
+    {% if searchTerm %}
         {% if searchResults %}  
-            <br>
             <p>Top {{amountOfResults}} results for "{{searchTerm}}" (searched {{totalPages}} pages in {{searchTime}} milliseconds):</p>
             <table class="table table-striped">
                 <thead>
