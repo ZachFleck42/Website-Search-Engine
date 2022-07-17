@@ -1,1 +1,22 @@
-/* I don't like CSS */
+.navbar, .navDiv{
+    background-color: #90E0EF;
+}
+
+.nav-item{
+    margin-left: 6px;
+    margin-right: 6px;
+}
+
+.active{
+    background-color: #48CAE4;
+}
+
+.content{
+    background-color: #CAF0F8;
+    height: 100%;
+    padding-bottom: 1px;
+}
+
+.inputBox{
+    height:30px;
+}

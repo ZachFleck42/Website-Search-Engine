@@ -6,6 +6,7 @@ from src.search_utils import runSearch
 
 def crawl(request):
     renderArguments = {}
+    renderArguments['activeTab'] = "/crawl"
     if request.method == "POST":
         # Check if the 'website to crawl' field was filled in properly
         websiteURL = request.POST.get('input_url')
@@ -35,6 +36,7 @@ def search(request):
     
     # Initiate renderArguments with necessary variables to display any search page
     renderArguments = {}
+    renderArguments['activeTab'] = "/search"
     renderArguments['searchMethods'] = list(searchMethods)
     renderArguments['searchableWebsites'] = getSearchableWebsites()
     renderArguments['amountOfResultsOptions'] = (10, 50, 100, 1000)
@@ -57,6 +59,7 @@ def search(request):
         renderArguments['amountOfResults'] = request.POST.get('input_amount')
         if not renderArguments['amountOfResults']:
             renderArguments['amountOfResults'] = 10
+        renderArguments['amountOfResults'] = int(renderArguments['amountOfResults'])
         
         # Check if the 'search term' field was filled in properly
         renderArguments['searchTerm'] = request.POST.get('input_search')
@@ -81,5 +84,6 @@ def home(request):
     
 
 def manageDatabase(request):
-    # TODO
-    return render(request, 'manage-database.html')
+    renderArguments = {}
+    renderArguments['activeTab'] = "/manage-database"
+    return render(request, 'manage-database.html', renderArguments)
