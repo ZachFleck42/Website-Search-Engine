@@ -1,22 +1,30 @@
-.navbar, .navDiv{
-    background-color: #dee2e6;
+.navDiv{
+    background-color: #DEE2E6;
+}
+
+.navbar{
+    padding: 0px;
 }
 
 .nav-item{
-    margin-left: 6px;
-    margin-right: 6px;
+    padding: 5px;
 }
 
 .active{
-    background-color: #ced4da;
+    background-color: #CED4DA;
 }
 
 .content{
-    background-color: #f8f9fa;
-    height: 100%;
+    background-color: #F8F9FA;
     padding-bottom: 1px;
+    padding-left: 25px;
+    padding-right: 25px;
 }
 
 .inputBox{
     height:30px;
+}
+
+.tab{
+    margin-left: 40px;
 }

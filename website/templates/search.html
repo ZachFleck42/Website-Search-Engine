@@ -4,9 +4,10 @@
 <br>
 <form method="post">
     {% csrf_token %}
-    <p>Enter the website, search method, a search term, and the number of results to display.</p>
-    <p>If not selected, 'Search method' will default to 'Python str.count()' and 'No. of Results to Display' will default to 10.</p>
-    <p>'Website' and 'Search term' fields <b>must</b> be filled out.</p>
+    <p>Enter the website, search method, a search term, and the number of results to display:</p>
+    <p class="tab">- If not selected, 'Search method' will default to 'Python str.count()'.</p>
+    <p class="tab">- If not selected, 'No. of Results to Display' will default to 10.</p>
+    <p class="tab">- 'Website' and 'Search term' fields <b>must</b> be filled out.</p>
     <select name="input_website" class="inputBox">
         {% if searchWebsite %}
             <option selected value="{{searchWebsite}}">{{searchWebsite}}</option>
@@ -55,11 +56,11 @@
 <br>
 
 {% if noWebsite %}
-    <p>Error: No website input. Please select a website and try again.</p>
+    <p>Error: Please select a website.</p>
 {% endif %}
 
 {% if noSearchTerm %}
-    <p>Error: No search term. Please input a search term and try again</p>
+    <p>Error: Please input a search term.</p>
 {% endif %}
 
 {% if searchTerm %}

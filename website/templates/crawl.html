@@ -12,6 +12,6 @@
 {% if crawledURL %}
     <p>Successfully crawled "{{crawledURL}}". Visited {{webpageVisitCount}} pages in {{crawlTime}} seconds.</p>
 {% elif blankForm %}
-    <p>Error: URL field cannot be blank. Please enter a valid URL and try again.</p>
+    <p>Error: Please enter a valid URL.</p>
 {% endif %}
 {% endblock %}
