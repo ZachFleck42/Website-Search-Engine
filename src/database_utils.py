@@ -5,6 +5,29 @@ from urllib.parse import urlparse
 databaseConnectionParamaters = {"host": "postgres", "database": "searchEngineDb", "user": "postgres", "password": "postgres"}
 
 
+def getTableName(url):
+    '''
+    Returns the name of an SQL table for a website based on its URL.
+    Name takes the form: "urlhostname_domain"
+    '''
+    return(((urlparse(url).hostname).replace('www.', '')).replace('.', '_'))
+    
+
+def tableExists(tableName):
+    '''
+    Checks to see if a table with name {tableName} already exists in database.
+    Returns True if found, False if not.
+    '''
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
+    databaseCursor = databaseConnection.cursor()
+    
+    databaseCursor.execute("SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name = %s)", (tableName, ))
+    result = databaseCursor.fetchone()[0]
+    
+    databaseConnection.close()
+    return result
+
+
 def createTable(tableName):
     '''
     Creates a table with name {tableName} in the database
@@ -33,29 +56,22 @@ def dropTable(tableName):
         
     databaseConnection.commit()
     databaseConnection.close()
-
-
-def getTableName(url):
-    '''
-    Returns the name of an SQL table for a website based on its URL.
-    Name takes the form: "urlhostname_domain"
-    '''
-    return(((urlparse(url).hostname).replace('www.', '')).replace('.', '_'))
     
-
-def tableExists(tableName):
+    
+def renameTable(tableName, newName):
     '''
-    Checks to see if a table with name {tableName} already exists in database.
-    Returns True if found, False if not.
+    Renames table {tableName} to {newName} in the database.
     '''
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
+
+    query = sql.SQL("ALTER TABLE {old} RENAME TO {new}").format(
+        old = sql.Identifier(tableName),
+        new = sql.Identifier(newName))
+    databaseCursor.execute(query)
     
-    databaseCursor.execute("SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name = %s)", (tableName, ))
-    result = databaseCursor.fetchone()[0]
-    
+    databaseConnection.commit()
     databaseConnection.close()
-    return result
 
     
 def appendData(url, pageData, tableName):
@@ -114,6 +130,9 @@ def getAllTables():
     
     
 def getRowCount(tableName):
+    '''
+    Returns the number of rows in table {tableName}.
+    '''
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
     
@@ -126,20 +145,10 @@ def getRowCount(tableName):
     return rowCount[0][0]
     
 
-def renameTable(tableName, newName):
-    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
-    databaseCursor = databaseConnection.cursor()
-
-    query = sql.SQL("ALTER TABLE {old} RENAME TO {new}").format(
-        old = sql.Identifier(tableName),
-        new = sql.Identifier(newName))
-    databaseCursor.execute(query)
-    
-    databaseConnection.commit()
-    databaseConnection.close()
-
-
 def deleteRow(tableName, pageURL):
+    '''
+    Deletes the row in {tableName} where column page_url = {pageURL}.
+    '''
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
 
