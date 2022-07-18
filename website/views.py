@@ -60,6 +60,12 @@ def search(request):
             return render(request, 'search.html', renderArguments)
         renderArguments['searchTable'] = renderArguments['searchWebsite'].replace('.', '_')
         
+        # Check if the 'search term' field was filled in properly
+        renderArguments['searchTerm'] = request.POST.get('input_search')
+        if renderArguments['searchTerm'] == '':
+            renderArguments['noSearchTerm'] = 1
+            return render(request, 'search.html', renderArguments)
+        
         # Check if the 'search method' field was filled in. Default to str.count() method if not
         renderArguments['searchMethod'] = request.POST.get('input_method')
         if not renderArguments['searchMethod']:
@@ -71,12 +77,6 @@ def search(request):
         if not renderArguments['amountOfResults']:
             renderArguments['amountOfResults'] = 10
         renderArguments['amountOfResults'] = int(renderArguments['amountOfResults'])
-        
-        # Check if the 'search term' field was filled in properly
-        renderArguments['searchTerm'] = request.POST.get('input_search')
-        if renderArguments['searchTerm'] == '':
-            renderArguments['noSearchTerm'] = 1
-            return render(request, 'search.html', renderArguments)
         
         # If all fields filled in properly, run a search with the provided arguments
         searchResults, searchTime = runSearch(renderArguments['searchTable'], renderArguments['searchTerm'], renderArguments['searchMethod'], renderArguments['amountOfResults'])
@@ -106,6 +106,7 @@ def manageDatabase(request):
 def manageTable(request, table):
     renderArguments = {}
     renderArguments['activeTab'] = "/manage-database"
+    renderArguments['table'] = table
     renderArguments['website'] = table.replace('_', '.')
     
     websiteData = fetchAllData(table)

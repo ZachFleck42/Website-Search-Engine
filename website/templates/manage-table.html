@@ -2,15 +2,15 @@
 {% block title %}Manage database{% endblock %}
 {% block content %}
 <br>
-<p>View or delete entries for database table "{{website}}".</p>
+<p>View or delete pages in {{website}}'s database table.</p>
 <p>Pages are sorted alphabetically by title</p>
 
 <table class="table table-bordered table-striped">
     <thead>
         <tr>
-            <th scope="col">No.</th>
+            <th scope="col" style="width: 5%">No.</th>
             <th scope="col">Page Title / URL</th>
-            <th scope="col">Actions</th>
+            <th scope="col" style="width: 9%; text-align:center">Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -18,7 +18,7 @@
         <tr>
             <td>{{forloop.counter}}</td>
             <td><a href="{{page.0}}" target="_blank" rel="noopener noreferrer">{{page.1}}</a></td>
-            <td>Hi</td>
+            <td style="text-align:center">Delete</td>
         </tr>
         {% endfor %}
     </tbody>

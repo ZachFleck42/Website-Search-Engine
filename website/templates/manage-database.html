@@ -2,16 +2,16 @@
 {% block title %}Manage database{% endblock %}
 {% block content %}
 <br>
-<p>View, rename, or delete existing websites in database.</p>
+<p>View, rename, or delete websites in the database.</p>
 <p>Websites are sorted alphabetically.</p>
 
 <table class="table table-bordered table-striped">
     <thead>
         <tr>
-            <th scope="col">No.</th>
+            <th scope="col" style="width: 5%">No.</th>
             <th scope="col">Website</th>
-            <th scope="col">Number of pages</th>
-            <th scope="col">Actions</th>
+            <th scope="col" style="width:13%">Number of pages</th>
+            <th scope="col" style="width: 12%; text-align:center">Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -20,7 +20,7 @@
             <td>{{forloop.counter}}</td>
             <td><a href="{{request.path}}{{table.0}}">{{websiteName}}</a></td>
             <td>{{table.1}}</td>
-            <td>Hi</td>
+            <td style="text-align:center">Rename &nbsp; Delete</td>
         </tr>
         {% endfor %}
     </tbody>

@@ -36,12 +36,9 @@ def dropTable(tableName):
 def getTableName(url):
     '''
     Returns the name of an SQL table for a website based on its URL.
-    Name attempts to take the form: "urlhostname_domain"
+    Name takes the form: "urlhostname_domain"
     '''
-    pageHost = urlparse(url).hostname
-    tableName = pageHost.replace('.', '_')
-    
-    return(tableName)
+    return(((urlparse(url).hostname).replace('www.', '')).replace('.', '_'))
     
 
 def tableExists(tableName):
