@@ -1,6 +1,6 @@
 from django.shortcuts import redirect, render
 from src.crawler import crawlWebsite
-from src.database_utils import fetchAllData, getAllTables, getRowCount, changeTableName
+import src.database_utils as database
 from src.search_utils import runSearch
 
 
@@ -13,11 +13,10 @@ def crawl(request):
     renderArguments['activeTab'] = "/crawl"
     
     if request.method == "POST":
-        
         # Check if the 'website to crawl' field was filled in properly
         websiteURL = request.POST.get('input_url')
         if not websiteURL:
-            renderArguments['noURL'] = 1
+            renderArguments['noURL'] = True
             return render(request, 'crawl.html', renderArguments)
         renderArguments['userInput'] = websiteURL
         
@@ -28,7 +27,7 @@ def crawl(request):
 
         # If the crawler was unable to connect to the provided URL...
         if not webpageVisitCount:
-            renderArguments['badURL'] = 1
+            renderArguments['badURL'] = True
         
     return render(request, 'crawl.html', renderArguments)
     
@@ -40,7 +39,7 @@ def search(request):
     
     # Get available websites to search from the database
     renderArguments['searchableWebsites'] = []
-    for table in getAllTables():
+    for table in database.getAllTables():
         renderArguments['searchableWebsites'].append(table[0].replace('_', '.'))
         
     # Define search method and amount of results options
@@ -56,14 +55,14 @@ def search(request):
         # Check if the 'website to search' field was filled in
         renderArguments['searchWebsite'] = request.POST.get('input_website')
         if not renderArguments['searchWebsite']:
-            renderArguments['noWebsite'] = 1
+            renderArguments['noWebsite'] = True
             return render(request, 'search.html', renderArguments)
         renderArguments['searchTable'] = renderArguments['searchWebsite'].replace('.', '_')
         
         # Check if the 'search term' field was filled in properly
         renderArguments['searchTerm'] = request.POST.get('input_search')
         if renderArguments['searchTerm'] == '':
-            renderArguments['noSearchTerm'] = 1
+            renderArguments['noSearchTerm'] = True
             return render(request, 'search.html', renderArguments)
         
         # Check if the 'search method' field was filled in. Default to str.count() method if not
@@ -85,7 +84,7 @@ def search(request):
         renderArguments['searchResults'] = searchResults[:renderArguments['amountOfResults']]
         renderArguments['searchTime'] = round((searchTime * 1000), 2)
         renderArguments['foundPages'] = len(searchResults)
-        renderArguments['totalPages'] = getRowCount(renderArguments['searchTable'])
+        renderArguments['totalPages'] = database.getRowCount(renderArguments['searchTable'])
         
     return render(request, 'search.html', renderArguments)
 
@@ -94,10 +93,13 @@ def manageDatabase(request):
     renderArguments = {}
     renderArguments['activeTab'] = "/manage-database"
 
+    # Replace underscores with periods to better represent 'website' instead of 'table'
     websiteNames = []
-    tableData = getAllTables()
+    tableData = database.getAllTables()
     for table in tableData:
         websiteNames.append((table[0]).replace('_', '.'))
+    
+    # Zip the website names with the table data for easy Jinja iteration in page template
     renderArguments['tableData'] = zip(tableData, websiteNames)
     
     return render(request, 'manage-database.html', renderArguments)
@@ -109,7 +111,7 @@ def manageTable(request, table):
     renderArguments['table'] = table
     renderArguments['website'] = table.replace('_', '.')
     
-    websiteData = fetchAllData(table)
+    websiteData = database.fetchAllData(table)
     websiteData.sort(key=lambda x: x[1])
     renderArguments['pages'] = websiteData
     return render(request, 'manage-table.html', renderArguments)
@@ -122,11 +124,19 @@ def renameTable(request, table):
     
     if request.method == "POST":
         renderArguments['newTable'] = request.POST.get('input_name')
+        
+        # Make sure user submit something
         if not renderArguments['newTable']:
-            renderArguments['noTable'] = 1
+            renderArguments['noTable'] = True
+            return render(request, 'rename.html', renderArguments)
+            
+        # Check validity of provided table name
+        if not database.validTableName(renderArguments['newTable']):
+            renderArguments['badTable'] = 1
             return render(request, 'rename.html', renderArguments)
         
-        changeTableName(renderArguments['oldTable'], renderArguments['newTable'])
+        # Rename the table and redirect back to the manage-database/ page
+        database.changeTableName(renderArguments['oldTable'], renderArguments['newTable'])
         return redirect('/manage-database')
     
     return render(request, 'rename.html', renderArguments)
@@ -136,6 +146,11 @@ def deleteTable(request, table):
     renderArguments = {}
     renderArguments['activeTab'] = "/manage-database"
     renderArguments['table'] = table
+    
+    if request.method == "POST":
+        database.dropTable(table)
+        return redirect('/manage-database')
+    
     return render(request, 'delete.html', renderArguments)
 
 

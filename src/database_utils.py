@@ -12,6 +12,16 @@ def getTableName(url):
     '''
     return(((urlparse(url).hostname).replace('www.', '')).replace('.', '_'))
     
+    
+def validTableName(tableName):
+    '''
+    Checks to see if a user-provided table name is valid.
+    Name must be less than 32 characters, contain only letters, digits, and underscores,
+        and the first character cannot be a digit.
+    Returns True if valid, False if not.
+    ''' 
+    return (len(tableName) < 32) and ((tableName.replace('_', '')).isalnum()) and not (tableName[0].isnumeric())
+        
 
 def tableExists(tableName):
     '''
@@ -82,11 +92,10 @@ def appendData(url, pageData, tableName):
     
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
-    
-    query = sql.SQL("INSERT INTO {} VALUES (%s, %s, %s, %s)").format(
-        sql.Identifier(tableName),
+        
+    databaseCursor.execute(sql.SQL("INSERT INTO {} VALUES (%s, %s, %s, %s)").format(
+        sql.Identifier(tableName)),
         [url, pageTitle, pageDesc, pageText])
-    databaseCursor.execute(query)
     
     databaseConnection.commit()
     databaseConnection.close()

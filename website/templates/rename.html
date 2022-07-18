@@ -4,7 +4,7 @@
 <br>
 <p>Current table name is "{{oldTable}}"</p>
 <p>Enter a new name for the table:</p>
-<p class="tab"> - Names in SQL must begin with a letter (a-z) or underscore (_).</p>
+<p class="tab"> - Name must begin with a letter (a-z) or underscore (_).</p>
 <p class="tab"> - Subsequent characters in a name can be letters, digits (0-9), or underscores.</p> 
 <p class="tab"> - Maximum length of name is 31 characters.</p>
 <form method="post">
@@ -16,6 +16,7 @@
 {% if noTable %}
     <p>Error: Please enter a new name</p>
 {% elif badTable %}
-    <p>Error: Could not create table with name {{newName}}</p>
+    <p>Error: Could not create table with name "{{newTable}}"</p>
+    <p>Ensure input meets requirements above and try again.</p>
 {% endif %}
 {% endblock %}

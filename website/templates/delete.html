@@ -2,6 +2,11 @@
 {% block title %}Crawl{% endblock %}
 {% block content %}
 <br>
-<p>Hello</p>
-
+<p><b>WARNING:</b> Table "{{table}}" will be deleted and all its data will be lost.</p>
+<p>Are you sure you wish to proceed?</p>
+<form method="post">
+    {% csrf_token %}
+    <input type="submit" value="I'm sure">
+</form>
+<br>
 {% endblock %}
