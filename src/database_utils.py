@@ -12,8 +12,9 @@ def createTable(tableName):
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
     
-    databaseCursor.execute(sql.SQL("CREATE TABLE {} (page_url VARCHAR, page_title VARCHAR, page_desc VARCHAR, page_text VARCHAR);")
-        .format(sql.Identifier(tableName)))
+    query = sql.SQL("CREATE TABLE {table} (page_url VARCHAR, page_title VARCHAR, page_desc VARCHAR, page_text VARCHAR);").format(
+        table = sql.Identifier(tableName))
+    databaseCursor.execute(query)
         
     databaseConnection.commit()
     databaseConnection.close()
@@ -26,8 +27,9 @@ def dropTable(tableName):
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
     
-    databaseCursor.execute(sql.SQL("DROP TABLE {};")
-        .format(sql.Identifier(tableName)))
+    query = sql.SQL("DROP TABLE {table};").format(
+        table = sql.Identifier(tableName))
+    databaseCursor.execute(query)
         
     databaseConnection.commit()
     databaseConnection.close()
@@ -49,31 +51,29 @@ def tableExists(tableName):
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
     
-    databaseCursor.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = '{}'"
-        .format(tableName.replace('\'', '\'\'')))
-        
-    if databaseCursor.fetchone()[0] == 1:
-        databaseConnection.close()
-        return True
+    databaseCursor.execute("SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name = %s)", (tableName, ))
+    result = databaseCursor.fetchone()[0]
     
     databaseConnection.close()
-    return False
+    return result
 
     
 def appendData(url, pageData, tableName):
     '''
     Appends specified data to the database.
     '''
-    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
-    cursor = databaseConnection.cursor()
-    
     pageTitle, pageDesc, pageText = pageData
-    cursor.execute(sql.SQL("INSERT INTO {} VALUES (%s, %s, %s, %s);")
-        .format(sql.Identifier(tableName)), [url, pageTitle, pageDesc, pageText])
+    
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
+    databaseCursor = databaseConnection.cursor()
+    
+    query = sql.SQL("INSERT INTO {} VALUES (%s, %s, %s, %s)").format(
+        sql.Identifier(tableName),
+        [url, pageTitle, pageDesc, pageText])
+    databaseCursor.execute(query)
     
     databaseConnection.commit()
     databaseConnection.close()
-    return 1
     
 
 def fetchAllData(tableName):
@@ -83,8 +83,9 @@ def fetchAllData(tableName):
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
     
-    databaseCursor.execute(sql.SQL("SELECT * FROM {};")
-        .format(sql.Identifier(tableName)))
+    query = sql.SQL("SELECT * FROM {table}").format(
+        table = sql.Identifier(tableName))
+    databaseCursor.execute(query)
     
     data = databaseCursor.fetchall()
     databaseConnection.close()
@@ -103,20 +104,22 @@ def getAllTables():
     databaseTables = databaseCursor.fetchall()
     databaseConnection.close()
     
-    searchableWebsites = []
+    tableData = []
     for table in databaseTables:
         tableName = table[0]
         rowCount = getRowCount(tableName)
-        searchableWebsites.append([tableName, rowCount])
+        tableData.append([tableName, rowCount])
         
-    return sorted(searchableWebsites)
+    return sorted(tableData)
     
     
 def getRowCount(tableName):
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
     
-    databaseCursor.execute(sql.SQL("SELECT COUNT(*) FROM {};").format(sql.Identifier(tableName)))
+    query = sql.SQL("SELECT COUNT(*) from {table}").format(
+        table = sql.Identifier(tableName))
+    databaseCursor.execute(query)
     
     rowCount = databaseCursor.fetchall()
     databaseConnection.close()
@@ -124,7 +127,16 @@ def getRowCount(tableName):
     
 
 def renameTable(tableName, newName):
-    pass
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
+    databaseCursor = databaseConnection.cursor()
+
+    query = sql.SQL("ALTER TABLE {old} RENAME TO {new}").format(
+        old = sql.Identifier(tableName),
+        new = sql.Identifier(newName))
+    databaseCursor.execute(query)
+    
+    databaseConnection.commit()
+    databaseConnection.close()
 
 
 def deleteRow():

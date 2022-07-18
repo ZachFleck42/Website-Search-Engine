@@ -84,9 +84,7 @@ def processURL(url, databaseTable):
     getLinks(url, parsedPage)
     
     # Append data to the database
-    if not database.appendData(url, pageData, databaseTable):
-        print(f"ERROR: Could not append data from {url}")
-        return 0
+    database.appendData(url, pageData, databaseTable)
     
     return 1
 
