@@ -139,5 +139,14 @@ def renameTable(tableName, newName):
     databaseConnection.close()
 
 
-def deleteRow():
-    pass
+def deleteRow(tableName, pageURL):
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
+    databaseCursor = databaseConnection.cursor()
+
+    query = sql.SQL("DELETE FROM {table} where {col} = %s").format(
+        table = sql.Identifier(tableName),
+        col = sql.Identifier('page_url'))
+    databaseCursor.execute(query, (pageURL,))
+    
+    databaseConnection.commit()
+    databaseConnection.close()
