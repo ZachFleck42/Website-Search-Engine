@@ -6,7 +6,7 @@
 <p>Are you sure you wish to proceed?</p>
 <form method="post">
     {% csrf_token %}
-    <input type="submit" value="I'm sure">
+    <input type="submit" value="Delete {{table}}">
 </form>
 <br>
 {% endblock %}

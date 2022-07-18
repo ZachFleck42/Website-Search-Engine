@@ -25,6 +25,18 @@
     height:30px;
 }
 
+.link-button {
+    color: var(--bs-link-color);
+    text-decoration: underline;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.link-button:hover{
+    color: var(--bs-link-hover-color);
+}
+
 .tab{
     margin-left: 40px;
 }

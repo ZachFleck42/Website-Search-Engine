@@ -3,8 +3,7 @@
 {% block content %}
 <br>
 <p>View or delete pages in {{website}}'s database table.</p>
-<p>Pages are sorted alphabetically by title</p>
-
+<p>Click on a page title to visit its URL.</p>
 <table class="table table-bordered table-striped">
     <thead>
         <tr>
@@ -18,7 +17,13 @@
         <tr>
             <td>{{forloop.counter}}</td>
             <td><a href="{{page.0}}" target="_blank" rel="noopener noreferrer">{{page.1}}</a></td>
-            <td style="text-align:center">Delete</td>
+            <td style="text-align: center;">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="submitparam1" value="value1">
+                    <button type="submit" name="row" value="{{page.0}}" class="link-button">Delete</button>
+                </form>
+            </td>
         </tr>
         {% endfor %}
     </tbody>

@@ -114,6 +114,13 @@ def manageTable(request, table):
     websiteData = database.fetchAllData(table)
     websiteData.sort(key=lambda x: x[1])
     renderArguments['pages'] = websiteData
+    
+    if request.method == "POST":
+        renderArguments['row'] = request.POST.get('row')
+        database.deleteRow(table, renderArguments['row'])
+        url = "/manage-database/" + table
+        return redirect(url)
+    
     return render(request, 'manage-table.html', renderArguments)
     
 
@@ -152,7 +159,3 @@ def deleteTable(request, table):
         return redirect('/manage-database')
     
     return render(request, 'delete.html', renderArguments)
-
-
-def deleteRow():
-    pass
