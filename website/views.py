@@ -165,3 +165,14 @@ def deleteTable(request, table):
         return redirect('/manage-database')
     
     return render(request, 'delete.html', renderArguments)
+    
+def processTable(request, table):
+    renderArguments = {}
+    renderArguments['activeTab'] = "/manage-database"
+    renderArguments['table'] = table
+    
+    if request.method == "POST":
+        database.preProcessTable(table)
+        return redirect('/manage-database')
+    
+    return render(request, 'pre-process.html', renderArguments)

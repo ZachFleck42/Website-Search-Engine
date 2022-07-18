@@ -1,12 +1,8 @@
 import src.database_utils as database
-import nltk
-import re
 import src.redis_utils as redis
 import requests
 from bs4 import BeautifulSoup
 from celery import Celery
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
 from time import time
 from urllib.parse import urlparse
 
@@ -42,8 +38,6 @@ def crawlWebsite(initialURL):
     database.createTable(tableName)
     
     # Make sure necessary text-processing files are present and cache is clear
-    nltk.download('stopwords')
-    nltk.download('punkt')
     redis.clearCache()
     
     # Add the initial URL to the queue
@@ -105,33 +99,10 @@ def scrapeData(parsedPage):
     pageText = parsedPage.get_text()
     pageDesc = str(parsedPage.find("meta", attrs={'name': 'description'}))[14:-21]
     if not pageDesc:
-        pageDesc = "No page description available."
-
-    processedPageText = preProcessPageText(pageText)
+        pageDesc = "None"
     
-    return (pageTitle, pageDesc, processedPageText)
+    return (pageTitle, pageDesc, pageText)
     
-    
-def preProcessPageText(pageText):
-    '''
-    Accepts the text of a webpage as a string and returns the 'cleaned' text.
-    Removes extra whitespace, punctuation, and unwanted words.
-    '''
-    # Remove unwanted characters
-    step1 = re.sub(r'[^A-Za-z0-9\'\-]', ' ', pageText)
-    
-    # Force all characters to lowercase
-    step2 = step1.lower()
-    
-    # Tokenize the text
-    step3 = word_tokenize(step2)
-    
-    # Remove all stopwords from the text
-    stopWords = set(stopwords.words('english'))
-    step4 = [word for word in step3 if not word in stopWords]
-    
-    return " ".join(step4)
-
 
 def getLinks(url, parsedPage):
     '''

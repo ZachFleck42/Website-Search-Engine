@@ -1,8 +1,8 @@
 {% extends 'base.html' %}
-{% block title %}Crawl{% endblock %}
+{% block title %}Manage | {{table}}{% endblock %}
 {% block content %}
 <br>
-<p><b>WARNING:</b> Table "{{table}}" will be deleted and all its data will be lost.</p>
+<p>Table "{{table}}" will be deleted and all its data will be lost.</p>
 <p>Are you sure you wish to proceed?</p>
 <form method="post">
     {% csrf_token %}
