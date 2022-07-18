@@ -23,8 +23,6 @@ services:
       python manage.py migrate &&
       celery -A src.crawler worker --detach  &&
       python manage.py runserver 0.0.0.0:8000"
-    volumes: 
-      - .:/search_engine
     ports:
       - 8000:8000
     environment:
