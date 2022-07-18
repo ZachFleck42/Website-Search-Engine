@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Crawl{% endblock %}
+{% block content %}
+<br>
+<p>Current table name is "{{oldTable}}"</p>
+<p>Enter a new name for the table:</p>
+<p class="tab"> - Names in SQL must begin with a letter (a-z) or underscore (_).</p>
+<p class="tab"> - Subsequent characters in a name can be letters, digits (0-9), or underscores.</p> 
+<p class="tab"> - Maximum length of name is 31 characters.</p>
+<form method="post">
+    {% csrf_token %}
+    <input autocomplete="off" name="input_name" placeholder="New name" type="text">
+    <input type="submit" value="Submit">
+</form>
+<br>
+{% if noTable %}
+    <p>Error: Please enter a new name</p>
+{% elif badTable %}
+    <p>Error: Could not create table with name {{newName}}</p>
+{% endif %}
+{% endblock %}

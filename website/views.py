@@ -1,6 +1,6 @@
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from src.crawler import crawlWebsite
-from src.database_utils import fetchAllData, getAllTables, getRowCount
+from src.database_utils import fetchAllData, getAllTables, getRowCount, changeTableName
 from src.search_utils import runSearch
 
 
@@ -113,3 +113,31 @@ def manageTable(request, table):
     websiteData.sort(key=lambda x: x[1])
     renderArguments['pages'] = websiteData
     return render(request, 'manage-table.html', renderArguments)
+    
+
+def renameTable(request, table):
+    renderArguments = {}
+    renderArguments['activeTab'] = "/manage-database"
+    renderArguments['oldTable'] = table
+    
+    if request.method == "POST":
+        renderArguments['newTable'] = request.POST.get('input_name')
+        if not renderArguments['newTable']:
+            renderArguments['noTable'] = 1
+            return render(request, 'rename.html', renderArguments)
+        
+        changeTableName(renderArguments['oldTable'], renderArguments['newTable'])
+        return redirect('/manage-database')
+    
+    return render(request, 'rename.html', renderArguments)
+
+
+def deleteTable(request, table):
+    renderArguments = {}
+    renderArguments['activeTab'] = "/manage-database"
+    renderArguments['table'] = table
+    return render(request, 'delete.html', renderArguments)
+
+
+def deleteRow():
+    pass

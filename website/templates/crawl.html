@@ -2,9 +2,9 @@
 {% block title %}Crawl{% endblock %}
 {% block content %}
 <br>
+<p>Enter the URL of the website you'd like to crawl and store in the database:</p>
 <form method="post">
     {% csrf_token %}
-    <p>Enter the URL of the website you'd like to crawl and store in the database:</p>
     <input autocomplete="off" name="input_url" placeholder="URL" type="text">
     <input type="submit" value="Submit">
 </form>

@@ -58,7 +58,7 @@ def dropTable(tableName):
     databaseConnection.close()
     
     
-def renameTable(tableName, newName):
+def changeTableName(tableName, newName):
     '''
     Renames table {tableName} to {newName} in the database.
     '''

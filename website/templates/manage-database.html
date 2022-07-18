@@ -20,7 +20,7 @@
             <td>{{forloop.counter}}</td>
             <td><a href="{{request.path}}{{table.0}}">{{websiteName}}</a></td>
             <td>{{table.1}}</td>
-            <td style="text-align:center">Rename &nbsp; Delete</td>
+            <td style="text-align:center"><a href="{{request.path}}{{table.0}}/rename/">Rename</a> &nbsp; <a href="{{request.path}}{{table.0}}/delete/">Delete</a></td>
         </tr>
         {% endfor %}
     </tbody>
