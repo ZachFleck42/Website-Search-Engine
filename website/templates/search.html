@@ -36,8 +36,12 @@
         {% endfor %}
     </select>
     
-    <input autocomplete="off" class="inputBox" name="input_search" placeholder="Search term" type="text">
-    
+    {% if searchTerm %}
+        <input autocomplete="off" class="inputBox" name="input_search" type="text" value="{{searchTerm}}" onfocus="value=''">
+    {% else %}
+        <input autocomplete="off" class="inputBox" name="input_search" placeholder="Search term" type="text">
+    {% endif %}
+        
     <select name="input_amount" class="inputBox">
         {% if amountOfResults %}
             <option selected value="{{amountOfResults}}">{{amountOfResults}}</option>
@@ -65,7 +69,8 @@
 
 {% if searchTerm %}
     {% if searchResults %}  
-        <p>Top {{amountOfResults}} of {{foundPages}} pages for "{{searchTerm}}" (searched {{totalPages}} pages in {{searchTime}} milliseconds):</p>
+        <p>Displaying top {{topResults}} of {{foundPages}} pages for "{{searchTerm}}" (searched {{totalPages}} pages in {{searchTime}} milliseconds)</p>
+        <p>Click on a page title to visit its URL.</p>
         <table class="table table-bordered table-striped">
             <thead>
                 <tr>

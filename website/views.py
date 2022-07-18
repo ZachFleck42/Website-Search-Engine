@@ -86,6 +86,12 @@ def search(request):
         renderArguments['foundPages'] = len(searchResults)
         renderArguments['totalPages'] = database.getRowCount(renderArguments['searchTable'])
         
+        # If less results found than the selected amount to display, adjust results output
+        if renderArguments['foundPages'] < renderArguments['amountOfResults']:
+            renderArguments['topResults'] = renderArguments['foundPages']
+        else:
+            renderArguments['topResults'] = renderArguments['amountOfResults']
+            
     return render(request, 'search.html', renderArguments)
 
 
