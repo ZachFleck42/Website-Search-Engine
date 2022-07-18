@@ -79,10 +79,10 @@ def search(request):
         renderArguments['amountOfResults'] = int(renderArguments['amountOfResults'])
         
         # If all fields filled in properly, run a search with the provided arguments
-        searchResults, searchTime = runSearch(renderArguments['searchTable'], renderArguments['searchTerm'], renderArguments['searchMethod'], renderArguments['amountOfResults'])
+        searchResults, searchTime = runSearch(renderArguments['searchTable'], renderArguments['searchTerm'], renderArguments['searchMethod'])
         
         # Store the results of the search in arguments to be passed to the results page
-        renderArguments['searchResults'] = searchResults
+        renderArguments['searchResults'] = searchResults[:renderArguments['amountOfResults']]
         renderArguments['searchTime'] = round((searchTime * 1000), 2)
         renderArguments['foundPages'] = len(searchResults)
         renderArguments['totalPages'] = getRowCount(renderArguments['searchTable'])

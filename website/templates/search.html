@@ -65,7 +65,7 @@
 
 {% if searchTerm %}
     {% if searchResults %}  
-        <p>Top {{amountOfResults}} results for "{{searchTerm}}" (searched {{totalPages}} pages in {{searchTime}} milliseconds):</p>
+        <p>Top {{amountOfResults}} of {{foundPages}} pages for "{{searchTerm}}" (searched {{totalPages}} pages in {{searchTime}} milliseconds):</p>
         <table class="table table-bordered table-striped">
             <thead>
                 <tr>

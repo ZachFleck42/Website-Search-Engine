@@ -6,7 +6,7 @@ from src.search_algorithms.robin_karp import RKsearch
 from time import time
 
 
-def runSearch(tableName, userInput, searchMethod, numberOfResults=10):
+def runSearch(tableName, userInput, searchMethod):
     '''
     Parent function for running a search for userInput in tableName.
     Also allows for the selection of one of five different search methods.
@@ -50,6 +50,6 @@ def runSearch(tableName, userInput, searchMethod, numberOfResults=10):
             searchTitles.append(pageTitle)
             
     # Sort and return the list of results
-    searchResultsSorted = (sorted(searchResults, reverse=True))[:numberOfResults]
+    searchResultsSorted = (sorted(searchResults, reverse=True))
     searchTime = time() - startSearchTime
     return(searchResultsSorted, searchTime)
