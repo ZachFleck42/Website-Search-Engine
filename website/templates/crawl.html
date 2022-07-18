@@ -9,9 +9,11 @@
     <input type="submit" value="Submit">
 </form>
 <br>
-{% if crawledURL %}
-    <p>Successfully crawled "{{crawledURL}}". Visited {{webpageVisitCount}} pages in {{crawlTime}} seconds.</p>
-{% elif blankForm %}
-    <p>Error: Please enter a valid URL.</p>
+{% if noURL %}
+    <p>Error: Please enter a URL</p>
+{% elif badURL %}
+    <p>Error: Could not connect to {{userInput}}</p>
+{% elif webpageVisitCount %}
+    <p>Successfully crawled "{{userInput}}". Visited {{webpageVisitCount}} pages in {{crawlTime}} seconds.</p>
 {% endif %}
 {% endblock %}

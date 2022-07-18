@@ -1,52 +1,65 @@
+import src.database_utils as database
 import nltk
 import re
-import src.redis_utils as redis_utils
+import src.redis_utils as redis
 import requests
 from bs4 import BeautifulSoup
 from celery import Celery
-from src.database_utils import appendData, createTable, dropTable, tableExists
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from time import time
 from urllib.parse import urlparse
 
-requestHeaders = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'}
 app = Celery('Search_Engine', broker='redis://redis:6379/1')
 app.conf.result_backend = 'redis://redis:6379/1'
 
 
-def crawlWebsite(initialURL, databaseTable):
+def crawlWebsite(initialURL):
     '''
     Parent function for connecting to and scraping/storing data from an entire website.
     Initializes queue, database connections, and asset downloads.
     Returns the total number of webpages visited by the crawler.
     '''
-    # If data for website exists already, delete it and start fresh
-    if tableExists(databaseTable):
-        dropTable(databaseTable)
-    
-    # Make sure necessary text-processing files are present
-    nltk.download('stopwords')
-    nltk.download('punkt')
-    
-    # Add the initial URL to the queue
-    startCrawlTime = time()
-    redis_utils.clearCache()
-    redis_utils.addToQueue(initialURL)
+    # Enforce proper URL format
+    if (initialURL.split('.', 1)[0] == "www") or ("http" not in initialURL):
+        initialURL = "https://" + initialURL
+        
+    # Check if URL is connectable
+    couldNotConnect = 0
+    try:
+        pageResponse = getPageResponse(initialURL)
+    except:
+        couldNotConnect = 1
+        
+    if couldNotConnect or (pageResponse.status_code != 200):
+        print(f'ERROR: Could not connect to "{initialURL}"')
+        return (0, 0)
     
     # Create a table in the database for the website
-    createTable(databaseTable)
+    tableName = database.getTableName(initialURL)
+    if database.tableExists(tableName):
+        database.dropTable(tableName)
+    database.createTable(tableName)
+    
+    # Make sure necessary text-processing files are present and cache is clear
+    nltk.download('stopwords')
+    nltk.download('punkt')
+    redis.clearCache()
+    
+    # Add the initial URL to the queue
+    redis.addToQueue(initialURL)
+    startCrawlTime = time()
     
     # While there are still links in the queue...
-    while ((redis_utils.getQueueCount()) > 0) or (currentlyProcessing()):
-        if url := redis_utils.popFromQueue():
-            redis_utils.markVisited(url)
+    while ((redis.getQueueCount()) > 0) or (processingQueue()):
+        if url := redis.popFromQueue():
+            redis.markVisited(url)
             print(f"Sending to Celery for processing: {url}")
-            processURL.delay(url, databaseTable)
+            processURL.delay(url, tableName)
     
     # Return the total number of webpages visited and the time it took to crawl them
-    webpageVisitCount = redis_utils.getVisitedCount()
     crawlTime = time() - startCrawlTime
+    webpageVisitCount = redis.getVisitedCount()
     
     return (webpageVisitCount, crawlTime)
     
@@ -58,35 +71,32 @@ def processURL(url, databaseTable):
     Returns 1 if page was processed without error.
     '''
     print(f"Processing {url}")
-    
-    # Connect to the URL and get its HTML source
-    if not (pageHTML := getHTML(url)):
-        print(f"ERROR: Could not get HTML from {url}")
+
+    # Check to make sure URL is connectable
+    pageResponse = getPageResponse(url)
+    if pageResponse.status_code != 200:
+        print(f"ERROR: Could not connect to {url}")
         return 0
     
     # Parse the page and scrape it for data and additional links
-    parsedPage = BeautifulSoup(pageHTML, 'html.parser')
+    parsedPage = BeautifulSoup(pageResponse.text, 'html.parser')
     pageData = scrapeData(parsedPage)
     getLinks(url, parsedPage)
     
     # Append data to the database
-    if not appendData(url, pageData, databaseTable):
+    if not database.appendData(url, pageData, databaseTable):
         print(f"ERROR: Could not append data from {url}")
         return 0
     
     return 1
 
 
-def getHTML(url):
+def getPageResponse(url):
     '''
-    Connects to a URL, obtains a response, and returns the webpage's HTML if available.
+    Connects to a URL and returns the response.
     '''
-    pageResponse = requests.get(url, headers=requestHeaders)
-    pageStatus = pageResponse.status_code
-    if pageStatus != 200:
-        return 0
-    else:
-        return pageResponse.text
+    requestHeaders = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'}
+    return requests.get(url, headers=requestHeaders)
 
 
 def scrapeData(parsedPage):
@@ -179,9 +189,7 @@ def filterLinks(links, pageURL):
         # Wiki-specific rules
         if any(tag in link for tag in unwantedTags):
             continue
-        if link[-3:] in unwantedLanguages:
-            continue
-        if link[-6:] == "/pt-br":
+        if link[-3:] in unwantedLanguages or link[-6:] == "/pt-br":
             continue
         
         # Delete any queries
@@ -205,14 +213,14 @@ def filterLinks(links, pageURL):
             links[index] = "https" + links[index][4:]
         
         # Ignore already visited URLs
-        if redis_utils.hasBeenVisited(links[index]):
+        if redis.hasBeenVisited(links[index]):
             continue
             
         # Link has passed through all filters and is suitable to be appended to queue
-        redis_utils.addToQueue(links[index])
+        redis.addToQueue(links[index])
             
             
-def currentlyProcessing():
+def processingQueue():
     '''
     Checks if Celery worker still has active tasks. If so, returns the list of tasks.
     '''

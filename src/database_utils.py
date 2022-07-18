@@ -36,13 +36,12 @@ def dropTable(tableName):
 def getTableName(url):
     '''
     Returns the name of an SQL table for a website based on its URL.
-    Name attempts to take the form of the website's hostname.
+    Name attempts to take the form: "urlhostname_domain"
     '''
-    pageHost = (urlparse(url).hostname).lower()
-    if pageHost[0:4] == "www.":
-        return pageHost[4:].split('.', 1)[0]
-    else:
-        return pageHost.split('.', 1)[0]
+    pageHost = urlparse(url).hostname
+    tableName = pageHost.replace('.', '_')
+    
+    return(tableName)
     
 
 def tableExists(tableName):
@@ -53,11 +52,8 @@ def tableExists(tableName):
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
     
-    databaseCursor.execute("""
-        SELECT COUNT(*)
-        FROM information_schema.tables
-        WHERE table_name = '{0}'
-        """.format(tableName.replace('\'', '\'\'')))
+    databaseCursor.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = '{}'"
+        .format(tableName.replace('\'', '\'\'')))
         
     if databaseCursor.fetchone()[0] == 1:
         databaseConnection.close()
@@ -76,8 +72,7 @@ def appendData(url, pageData, tableName):
     
     pageTitle, pageDesc, pageText = pageData
     cursor.execute(sql.SQL("INSERT INTO {} VALUES (%s, %s, %s, %s);")
-        .format(sql.Identifier(tableName)),
-        [url, pageTitle, pageDesc, pageText])
+        .format(sql.Identifier(tableName)), [url, pageTitle, pageDesc, pageText])
     
     databaseConnection.commit()
     databaseConnection.close()
@@ -91,22 +86,34 @@ def fetchAllData(tableName):
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
     
-    databaseCursor.execute(sql.SQL("SELECT * FROM {};").format(sql.Identifier(tableName)))
-    data = databaseCursor.fetchall()
+    databaseCursor.execute(sql.SQL("SELECT * FROM {};")
+        .format(sql.Identifier(tableName)))
     
+    data = databaseCursor.fetchall()
     databaseConnection.close()
+    data.sort(key=lambda x: x[1])
     return data
 
 
 def getSearchableWebsites():
+    '''
+    Gets a list of lists of all tables in the database and their rowcounts.
+    List is sorted alphabetically by table name.
+    '''
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
     
     databaseCursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
     databaseTables = databaseCursor.fetchall()
-    
     databaseConnection.close()
-    return databaseTables
+    
+    searchableWebsites = []
+    for table in databaseTables:
+        tableName = table[0]
+        rowCount = getRowCount(tableName)
+        searchableWebsites.append((tableName, rowCount))
+        
+    return sorted(searchableWebsites)
     
     
 def getRowCount(tableName):
@@ -114,7 +121,19 @@ def getRowCount(tableName):
     databaseCursor = databaseConnection.cursor()
     
     databaseCursor.execute(sql.SQL("SELECT COUNT(*) FROM {};").format(sql.Identifier(tableName)))
-    rowCount = databaseCursor.fetchall()
     
+    rowCount = databaseCursor.fetchall()
     databaseConnection.close()
     return rowCount[0][0]
+    
+
+def renameTable(tableName, newName):
+    pass
+
+
+def getAllTables():
+    pass
+
+
+def deleteRow():
+    pass

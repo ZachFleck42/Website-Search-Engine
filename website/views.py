@@ -1,25 +1,34 @@
 from django.shortcuts import render
 from src.crawler import crawlWebsite
-from src.database_utils import getTableName, getSearchableWebsites, getRowCount
+from src.database_utils import fetchAllData, getTableName, getSearchableWebsites, getRowCount
 from src.search_utils import runSearch
+
+
+def home(request):
+    return render(request, 'home.html')
 
 
 def crawl(request):
     renderArguments = {}
     renderArguments['activeTab'] = "/crawl"
+    
     if request.method == "POST":
+        
         # Check if the 'website to crawl' field was filled in properly
         websiteURL = request.POST.get('input_url')
         if not websiteURL:
-            renderArguments['blankForm'] = 1
+            renderArguments['noURL'] = 1
             return render(request, 'crawl.html', renderArguments)
-        renderArguments['crawledURL'] = websiteURL
+        renderArguments['userInput'] = websiteURL
         
-        # If valid input, crawl the provided website for data and store in database
-        tableName = getTableName(websiteURL)
-        webpageVisitCount, crawlTime = crawlWebsite(websiteURL, tableName)
+        # If valid input, (attempt to) crawl the website
+        webpageVisitCount, crawlTime = crawlWebsite(websiteURL)
         renderArguments['webpageVisitCount'] = webpageVisitCount
         renderArguments['crawlTime'] = round(crawlTime, 2)
+
+        # If the crawler was unable to connect to the provided URL...
+        if not webpageVisitCount:
+            renderArguments['badURL'] = 1
         
     return render(request, 'crawl.html', renderArguments)
     
@@ -37,11 +46,10 @@ def search(request):
     # Initiate renderArguments with necessary variables to display any search page
     renderArguments = {}
     renderArguments['activeTab'] = "/search"
-    renderArguments['searchMethods'] = list(searchMethods)
+    renderArguments['searchMethods'] = searchMethods
     renderArguments['searchableWebsites'] = getSearchableWebsites()
     renderArguments['amountOfResultsOptions'] = (10, 50, 100, 1000)
     
-    # If the user has attempted to make a search...
     if request.method == "POST":
         # Check if the 'website to search' field was filled in
         renderArguments['searchWebsite'] = request.POST.get('input_website')
@@ -79,11 +87,16 @@ def search(request):
     return render(request, 'search.html', renderArguments)
 
 
-def home(request):
-    return render(request, 'home.html')
-    
-
 def manageDatabase(request):
     renderArguments = {}
     renderArguments['activeTab'] = "/manage-database"
+    renderArguments['searchableWebsites'] = getSearchableWebsites()
     return render(request, 'manage-database.html', renderArguments)
+    
+
+def manageTable(request, table):
+    renderArguments = {}
+    renderArguments['activeTab'] = "/manage-database"
+    renderArguments['table'] = table
+    renderArguments['pages'] = fetchAllData(table)
+    return render(request, 'manage-table.html', renderArguments)

@@ -2,24 +2,22 @@
 {% block title %}Manage database{% endblock %}
 {% block content %}
 <br>
-<p>View, rename, or delete existing websites in database.</p>
-<p>Websites are sorted alphabetically.</p>
+<p>View or delete entries for database table "{{table}}".</p>
+<p>Entries are sorted alphabetically by page title</p>
 
 <table class="table table-bordered table-striped">
     <thead>
         <tr>
             <th scope="col">No.</th>
-            <th scope="col">Website</th>
-            <th scope="col">Number of pages</th>
+            <th scope="col">Page Title / URL</th>
             <th scope="col">Actions</th>
         </tr>
     </thead>
     <tbody>
-        {% for website in searchableWebsites %}
+        {% for page in pages %}
         <tr>
             <td>{{forloop.counter}}</td>
-            <td><a href="{{request.path}}{{website.0}}">{{website.0}}</a></td>
-            <td>{{website.1}}</td>
+            <td><a href="{{page.0}}" target="_blank" rel="noopener noreferrer">{{page.1}}</a></td>
             <td>Hi</td>
         </tr>
         {% endfor %}
