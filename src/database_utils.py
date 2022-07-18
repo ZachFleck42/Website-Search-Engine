@@ -91,11 +91,10 @@ def fetchAllData(tableName):
     
     data = databaseCursor.fetchall()
     databaseConnection.close()
-    data.sort(key=lambda x: x[1])
     return data
 
 
-def getSearchableWebsites():
+def getAllTables():
     '''
     Gets a list of lists of all tables in the database and their rowcounts.
     List is sorted alphabetically by table name.
@@ -111,7 +110,7 @@ def getSearchableWebsites():
     for table in databaseTables:
         tableName = table[0]
         rowCount = getRowCount(tableName)
-        searchableWebsites.append((tableName, rowCount))
+        searchableWebsites.append([tableName, rowCount])
         
     return sorted(searchableWebsites)
     
@@ -128,10 +127,6 @@ def getRowCount(tableName):
     
 
 def renameTable(tableName, newName):
-    pass
-
-
-def getAllTables():
     pass
 
 

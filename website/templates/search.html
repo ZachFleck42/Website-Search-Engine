@@ -16,8 +16,8 @@
         {% endif %}
         
         {% for website in searchableWebsites %}
-            {% if website.0 != searchWebsite %}
-                <option value="{{website.0}}">{{website.0}}</option>
+            {% if website != searchWebsite %}
+                <option value="{{website}}">{{website}}</option>
             {% endif %}
         {% endfor %}
     </select>

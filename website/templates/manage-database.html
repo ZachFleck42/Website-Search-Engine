@@ -15,11 +15,11 @@
         </tr>
     </thead>
     <tbody>
-        {% for website in searchableWebsites %}
+        {% for table, websiteName in tableData %}
         <tr>
             <td>{{forloop.counter}}</td>
-            <td><a href="{{request.path}}{{website.0}}">{{website.0}}</a></td>
-            <td>{{website.1}}</td>
+            <td><a href="{{request.path}}{{table.0}}">{{websiteName}}</a></td>
+            <td>{{table.1}}</td>
             <td>Hi</td>
         </tr>
         {% endfor %}
