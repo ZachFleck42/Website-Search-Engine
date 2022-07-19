@@ -105,7 +105,13 @@ def search(request):
 def manageDatabase(request):
     renderArguments = {}
     renderArguments['activeTab'] = "/manage-database"
-    renderArguments['tableData'] = database.getAllTables()
+    databaseTables = database.getAllTables()
+    for table in databaseTables:
+        if table[0].endswith("_pp"):
+            table.append(1)
+        else:
+            table.append(0)
+    renderArguments['tableData'] = databaseTables
 
     return render(request, 'manage-database.html', renderArguments)
 
@@ -171,8 +177,14 @@ def processTable(request, table):
     renderArguments['table'] = table
 
     if request.method == "POST":
-        checked = request.POST.get('input_newtable')
         newtable = table + "_pp"
+
+        # If a pre-processed table for the website already exists, raise an error
+        if database.tableExists(newtable):
+            renderArguments['tableExists'] = True
+            return render(request, 'pre-process.html', renderArguments)
+
+        checked = request.POST.get('input_newtable')
         if checked:     # If the user checked the "make a new table" option, create a new table
             database.copyTable(table, newtable)
             database.preProcessTable(newtable)
