@@ -46,7 +46,7 @@ def crawlWebsite(initialURL):
     while ((redis.getQueueCount()) > 0) or (processingQueue()):
         if url := redis.popFromQueue():
             redis.markVisited(url)
-            print(f"Sending to Celery for processing: {url}")
+            # DEBUG: print(f"Sending to Celery for processing: {url}")
             processURL.delay(url, tableName)
 
     # Return the total number of webpages visited and the time it took to crawl them
@@ -62,32 +62,31 @@ def processURL(url, databaseTable):
     Parent function for connecting to and scraping/storing data from an individual webpage.
     Returns 1 if page was processed without error.
     '''
-    print(f"Processing {url}")
+    # DEBUG: print(f"Processing {url}")
 
     # Get the page's HTML and parse it
-    print(f"Getting page response for {url}")               #!
+    # DEBUG: print(f"Getting page response for {url}")
     pageResponse = getPageResponse(url)
     if not pageResponse:
         print(f"ERROR: Could not connect to {url}")
         return 0
 
-    print(f"Parsing page for {url}")                        #!
+    # DEBUG: print(f"Parsing page for {url}")
     parsedPage = BeautifulSoup(pageResponse.text, 'html.parser')
 
     # Queue all links from page that are on the same website and have not already been visited/queued
-    print(f"Gettings links from {url}")                     #!
+    # DEBUG: print(f"Gettings links from {url}")
     pageLinks = getLinks(url, parsedPage)
     for link in pageLinks:
         if redis.hasBeenVisited(link):
             continue
-        print(f"Adding {link} to queue")                    #!
+        #print(f"Adding {link} to queue")
         redis.addToQueue(link)
 
-    print(f"Scraping data from {url}")                      #!
     # Scrape data from the page and append it to database
+    # DEBUG: print(f"Scraping data from {url}")
     pageData = scrapeData(parsedPage)
-
-    print(f"Appending data from {url}")                     #!
+    # DEBUG: print(f"Appending data from {url}")
     database.appendData(url, pageData, databaseTable)
 
 
@@ -134,7 +133,7 @@ def getLinks(url, parsedPage):
         cleanedLinks = cleanLinks(links, url)
         return cleanedLinks
     else:
-        return 0
+        return []
 
 
 def cleanLinks(links, pageURL):
@@ -159,36 +158,38 @@ def cleanLinks(links, pageURL):
     parsedPage = urlparse(pageURL)
 
     cleanLinks = []
-    for potentialLink in links:
-        link = potentialLink
+    for link in links:
+        potentialLink = link
 
-        if link.endswith(badExtensions):
+        if potentialLink.endswith(badExtensions):
             continue
 
-        if any(tag in link for tag in badInclusions):
+        if any(tag in potentialLink for tag in badInclusions):
             continue
 
         # Delete any page anchors and/or queries
-        link = link.split('#', 1)[0]
-        link = link.split('?', 1)[0]
+        if not (potentialLink := potentialLink.split('#', 1)[0]):
+            continue
+        if not (potentialLink := potentialLink.split('?', 1)[0]):
+            continue
 
         # Expand internal links
-        if "http" not in link:
-            if link[0] == '/':
-                link = "https://" + parsedPage.hostname + link
+        if "http" not in potentialLink:
+            if potentialLink[0] == '/':
+                potentialLink = "https://" + parsedPage.hostname + potentialLink
             else:
-                link = "https://" + parsedPage.hostname + (parsedPage.path).rstrip('/') + "/" + link
+                potentialLink = "https://" + parsedPage.hostname + (parsedPage.path).rstrip('/') + "/" + potentialLink
 
         # Ignore links to other domains
-        if parsedPage.hostname != urlparse(link).hostname:
+        if parsedPage.hostname != urlparse(potentialLink).hostname:
             continue
 
         # Only visit https:// URLs (not http://)
-        if urlparse(link).scheme != "https":
-            link = "https" + link[4:]
+        if urlparse(potentialLink).scheme != "https":
+            potentialLink = "https" + potentialLink[4:]
 
         # Link has passed through all filters and is suitable to be appended to queue
-        cleanLinks.append(link)
+        cleanLinks.append(potentialLink)
 
     return cleanLinks
 
