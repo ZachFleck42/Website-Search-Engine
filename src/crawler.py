@@ -37,7 +37,7 @@ def crawlWebsite(initialURL):
         database.dropTable(tableName)
     database.createTable(tableName)
     
-    # Make sure necessary text-processing files are present and cache is clear
+    # Make sure cache is clear from any previous crawls
     redis.clearCache()
     
     # Add the initial URL to the queue
@@ -129,8 +129,7 @@ def filterLinks(links, pageURL):
     unwantedTags = ["/Category:", "/File:", "/Talk:", "/User", "/Blog:", "/User_blog:", "/Special:", "/Template:", 
                     "/Template_talk:", "Wiki_talk:", "/Help:", "/Source:", "/Forum:", "/Forum_talk:", "/ru/", "/es/", 
                     "/ja/", "/de/", "/fi/", "/fr/", "/f/", "/pt-br/", "/uk/", "/he/", "/tr/", "/vi/", "/sv/", "/lt/", 
-                    "/pl/", "/hu/", "/ko/", "/da/", "/zh/", "/cs/", "/nl/", "/it/", "/el/", "/pt/", "/th/", "/id/",
-                    "/javascript:void"]
+                    "/pl/", "/hu/", "/ko/", "/da/", "/zh/", "/cs/", "/nl/", "/it/", "/el/", "/pt/", "/th/", "/id/"]
     unwantedLanguages = ["/es", "/de", "/ja", "/fr", "/zh", "/pl", "/ru", "/nl", "/uk", "/ko", "/it", "/hu", "/sv", 
                         "/cs", "/ms", "/da"]
     unwantedExtensions = ["jpg", "png", "gif", "pdf"]
@@ -138,10 +137,6 @@ def filterLinks(links, pageURL):
     for index, link in enumerate(links):
         # Ignore any links to the current page
         if link == '/':
-            continue
-
-        # Ignore page anchor links
-        if '#' in link:
             continue
 
         # Ignore email address links
@@ -152,6 +147,10 @@ def filterLinks(links, pageURL):
         if link[:4] == "tel:":
             continue
         
+        # Ignore page anchor links
+        if '#' in link:
+            continue
+        
         # Ignore links that end with unwanted extensions
         if link.split('.')[-1:][0] in unwantedExtensions:
             continue
@@ -159,6 +158,7 @@ def filterLinks(links, pageURL):
         # Wiki-specific rules
         if any(tag in link for tag in unwantedTags):
             continue
+        
         if link[-3:] in unwantedLanguages or link[-6:] == "/pt-br":
             continue
         
@@ -181,6 +181,10 @@ def filterLinks(links, pageURL):
         # Only visit https:// URLs (not http://)
         if urlparse(links[index]).scheme != "https":
             links[index] = "https" + links[index][4:]
+        
+        # Catch javascript nonsense
+        if "/javascript:void" in links[index]:
+            continue
         
         # Ignore already visited URLs
         if redis.hasBeenVisited(links[index]):

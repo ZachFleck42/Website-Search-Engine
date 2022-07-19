@@ -2,28 +2,25 @@
 {% block title %}Manage database{% endblock %}
 {% block content %}
 <br>
-<p>View, rename, or delete websites in the database.</p>
-<p>Click on a website's name to see more details and manage its table in the database.</p>
-
+<p>View, edit, or delete websites in the database.</p>
 <table class="table table-bordered table-striped">
     <thead>
         <tr>
             <th scope="col" style="width: 5%">No.</th>
-            <th scope="col">Website</th>
-            <th scope="col" style="width:13%">Number of pages</th>
-            <th scope="col" style="width: 20%; text-align:center">Actions</th>
+            <th scope="col">Table name</th>
+            <th scope="col" style="width: 13%">Number of pages</th>
+            <th scope="col" style="width: 30%; text-align:center">Actions</th>
         </tr>
     </thead>
     <tbody>
         {% for table, websiteName in tableData %}
         <tr>
             <td>{{forloop.counter}}</td>
-            <td><a href="{{request.path}}{{table.0}}">{{websiteName}}</a></td>
+            <td>{{table.0}}</td>
             <td>{{table.1}}</td>
-            <td style="text-align:center"><a href="{{request.path}}{{table.0}}/pre-process/">Pre-process</a> &nbsp; <a href="{{request.path}}{{table.0}}/rename/">Rename</a> &nbsp; <a href="{{request.path}}{{table.0}}/delete/">Delete</a></td>
+            <td style="text-align:center"><a href="{{request.path}}{{table.0}}">Manage data</a> &nbsp; <a href="{{request.path}}{{table.0}}/pre-process/">Pre-process</a> &nbsp; <a href="{{request.path}}{{table.0}}/rename/">Rename</a> &nbsp; <a href="{{request.path}}{{table.0}}/delete/">Delete</a></td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
-
 {% endblock %}
