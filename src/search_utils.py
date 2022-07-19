@@ -19,7 +19,7 @@ def runSearch(tableName, userInput, searchMethod):
     needle = userInput.lower()
     
     # Keep track of page titles to prevent duplicate entries caused by redirects
-    searchTitles = []   
+    searchTitles = []
         
     # Store the search results in a list of lists
     searchResults = []
@@ -27,7 +27,7 @@ def runSearch(tableName, userInput, searchMethod):
         pageURL = pageData[0]
         pageTitle = pageData[1]
         pageDesc = pageData[2]
-        haystack = pageData[3]
+        haystack = pageData[3].lower()
         
         numberOfMatches = 0
         if searchMethod == "COUNT":       # Search method is Python str.count() method
