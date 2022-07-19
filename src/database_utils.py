@@ -1,6 +1,5 @@
 import nltk
 import psycopg2
-import re
 from nltk.tokenize import word_tokenize
 from psycopg2 import sql
 from urllib.parse import urlparse
@@ -193,16 +192,13 @@ def preProcessText(pageText):
         "nor", "not", "only", "own", "same", "so", "than", "too", "very", "s", "t", "can",
         "will", "just", "don", "should", "now"]
 
-    # Remove unwanted characters
-    step1 = re.sub(r'[^A-Za-z0-9\'\-]', ' ', pageText)
-
     # Tokenize the text
-    step2 = word_tokenize(step1)
+    tokenizedText = word_tokenize(pageText)
 
     # Remove all stopwords from the text
-    step3 = [word for word in step2 if not word.lower() in stop_words]
+    processedText = [word for word in tokenizedText if not word.lower() in stop_words]
 
-    return " ".join(step3)
+    return " ".join(processedText)
 
 
 def preProcessTable(tableName):

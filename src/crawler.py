@@ -1,7 +1,7 @@
-from async_timeout import timeout
 import src.database_utils as database
 import src.redis_utils as redis
 import requests
+import re
 from bs4 import BeautifulSoup
 from celery import Celery
 from time import time
@@ -20,9 +20,9 @@ def crawlWebsite(initialURL):
     startCrawlTime = time()
 
     # Normalize user-input URL
-    if "http" not in initialURL:
-        temp = "https://" + initialURL
-    initialURL = "https://" + urlparse(temp).hostname
+    if "https" not in initialURL:
+        initialURL = "https://" + initialURL
+    initialURL = "https://" + urlparse(initialURL).hostname
 
     # Check if URL is connectable
     pageResponse = getPageResponse(initialURL)
@@ -92,10 +92,21 @@ def getPageResponse(url):
     '''
     Connects to a URL and returns the response.
     '''
-    requestHeaders = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'}
+    # Pretend to be not a robot
+    requestHeaders = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36',
+    #    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    #    'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+    #    'Accept-Encoding': 'none',
+    #    'Accept-Language': 'en-US,en;q=0.8',
+    #    'Connection': 'keep-alive'
+       }
+
     couldNotConnect = 0
-    try: pageResponse = requests.get(url, requestHeaders)
-    except: couldNotConnect = 1
+    try:
+        pageResponse = requests.get(url, requestHeaders)
+    except:
+        couldNotConnect = 1
+
     if couldNotConnect or (pageResponse.status_code != 200):
         return 0
 
@@ -106,8 +117,14 @@ def scrapeData(parsedPage):
     ''''
     Pulls and returns data from a parsed webpage.
     '''
-    pageTitle = parsedPage.title.string
-    pageText = parsedPage.get_text()
+    if parsedPage.title:
+        pageTitle = parsedPage.title.string
+    else:
+        pageTitle = "None"
+
+    rawPageText = parsedPage.get_text()
+    pageText = re.sub(r'[^A-Za-z0-9\'\-]', ' ', rawPageText)
+
     pageDesc = str(parsedPage.find("meta", attrs={'name': 'description'}))[14:-21]
     if not pageDesc:
         pageDesc = "None"
@@ -151,6 +168,7 @@ def cleanLinks(links, pageURL):
 
     # Tuple, not list, because surprisingly str.endswith() accepts tuples
     badExtensions = (".jpg", ".png", ".gif", ".pdf", ".aspx",
+                    "/view", "/download",
                     "/es", "/de", "/ja", "/fr", "/zh", "/pl", "/ru", "/nl", "/uk",
                     "/ko", "/it", "/hu", "/sv", "/cs", "/ms", "/da")
 
