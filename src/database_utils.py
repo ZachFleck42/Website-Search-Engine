@@ -87,6 +87,22 @@ def changeTableName(tableName, newName):
     databaseConnection.close()
 
 
+def copyTable(tableName, newName):
+    '''
+    Creates a copy of {tableName} with name {newName}
+    '''
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
+    databaseCursor = databaseConnection.cursor()
+
+    query = sql.SQL("CREATE TABLE {new} AS SELECT * FROM {old}").format(
+        old = sql.Identifier(tableName),
+        new = sql.Identifier(newName))
+    databaseCursor.execute(query)
+
+    databaseConnection.commit()
+    databaseConnection.close()
+
+
 def appendData(url, pageData, tableName):
     '''
     Appends specified data to the database.

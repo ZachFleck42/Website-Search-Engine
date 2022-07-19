@@ -38,9 +38,16 @@ def search(request):
     renderArguments['activeTab'] = "/search"
 
     # Get available websites to search from the database
-    renderArguments['searchableWebsites'] = []
+    websiteNames = []
+    tableNames = []
     for table in database.getAllTables():
-        renderArguments['searchableWebsites'].append(table[0].replace('_', '.'))
+        tableNames.append(table[0])
+        if table[0].endswith("_pp"):
+            websiteNames.append((table[0][:-3]).replace('_', '.') + " (pre-processed)")
+        else:
+            websiteNames.append(table[0].replace('_', '.'))
+
+    renderArguments['searchableWebsites'] = zip(websiteNames, tableNames)
 
     # Define search method and amount of results options
     renderArguments['searchMethods'] = (
@@ -53,11 +60,11 @@ def search(request):
 
     if request.method == "POST":
         # Check if the 'website to search' field was filled in
-        renderArguments['searchWebsite'] = request.POST.get('input_website')
-        if not renderArguments['searchWebsite']:
+        renderArguments['searchTable'] = request.POST.get('input_website')
+        renderArguments['searchWebsite'] = websiteNames[tableNames.index(renderArguments['searchTable'])]
+        if not renderArguments['searchTable']:
             renderArguments['noWebsite'] = True
             return render(request, 'search.html', renderArguments)
-        renderArguments['searchTable'] = renderArguments['searchWebsite'].replace('.', '_')
 
         # Check if the 'search term' field was filled in properly
         renderArguments['searchTerm'] = request.POST.get('input_search')
@@ -98,15 +105,7 @@ def search(request):
 def manageDatabase(request):
     renderArguments = {}
     renderArguments['activeTab'] = "/manage-database"
-
-    # Replace underscores with periods to better represent 'website' instead of 'table'
-    websiteNames = []
-    tableData = database.getAllTables()
-    for table in tableData:
-        websiteNames.append((table[0]).replace('_', '.'))
-
-    # Zip the website names with the table data for easy Jinja iteration in page template
-    renderArguments['tableData'] = zip(tableData, websiteNames)
+    renderArguments['tableData'] = database.getAllTables()
 
     return render(request, 'manage-database.html', renderArguments)
 
@@ -115,7 +114,7 @@ def manageTable(request, table):
     renderArguments = {}
     renderArguments['activeTab'] = "/manage-database"
     renderArguments['table'] = table
-    renderArguments['website'] = table.replace('_', '.')
+    renderArguments['website'] = "https://" + table.replace('_', '.')
 
     websiteData = database.fetchAllData(table)
     websiteData.sort(key=lambda x: x[1])
@@ -172,7 +171,15 @@ def processTable(request, table):
     renderArguments['table'] = table
 
     if request.method == "POST":
-        database.preProcessTable(table)
+        checked = request.POST.get('input_newtable')
+        newtable = table + "_pp"
+        if checked:     # If the user checked the "make a new table" option, create a new table
+            database.copyTable(table, newtable)
+            database.preProcessTable(newtable)
+        else:           # Otherwise, overwrite existing data
+            database.preProcessTable(table)
+            database.changeTableName(table, newtable)
+
         return redirect('/manage-database')
 
     return render(request, 'pre-process.html', renderArguments)

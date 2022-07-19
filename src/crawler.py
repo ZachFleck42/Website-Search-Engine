@@ -94,11 +94,11 @@ def getPageResponse(url):
     '''
     # Pretend to be not a robot
     requestHeaders = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36',
-    #    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    #    'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-    #    'Accept-Encoding': 'none',
-    #    'Accept-Language': 'en-US,en;q=0.8',
-    #    'Connection': 'keep-alive'
+       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+       'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+       'Accept-Encoding': 'none',
+       'Accept-Language': 'en-US,en;q=0.8',
+       'Connection': 'keep-alive'
        }
 
     couldNotConnect = 0
@@ -164,7 +164,7 @@ def cleanLinks(links, pageURL):
                     "/ru/", "/es/", "/ja/", "/de/", "/fi/", "/fr/", "/f/", "/pt-br/",
                     "/uk/", "/he/", "/tr/", "/vi/", "/sv/", "/lt/", "/pl/", "/hu/",
                     "/ko/", "/da/", "/zh/", "/cs/", "/nl/", "/it/", "/el/", "/pt/",
-                    "/th/", "/id/"]
+                    "/th/", "/id/", "/lac-es/"]
 
     # Tuple, not list, because surprisingly str.endswith() accepts tuples
     badExtensions = (".jpg", ".png", ".gif", ".pdf", ".aspx",

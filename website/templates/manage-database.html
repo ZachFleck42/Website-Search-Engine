@@ -3,6 +3,7 @@
 {% block content %}
 <br>
 <p>View, edit, or delete websites in the database.</p>
+<p>A "_pp" suffix indicates the page_text of the table has been pre-processed</p>
 <table class="table table-bordered table-striped">
     <thead>
         <tr>
@@ -13,7 +14,7 @@
         </tr>
     </thead>
     <tbody>
-        {% for table, websiteName in tableData %}
+        {% for table in tableData %}
         <tr>
             <td>{{forloop.counter}}</td>
             <td>{{table.0}}</td>
