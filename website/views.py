@@ -85,12 +85,6 @@ def search(request):
         renderArguments['searchTime'] = round((searchTime * 1000), 2)
         renderArguments['foundPages'] = len(searchResults)
         renderArguments['totalPages'] = database.getRowCount(renderArguments['searchTable'])
-        
-        # If less results found than the selected amount to display, adjust results output
-        if renderArguments['foundPages'] < renderArguments['amountOfResults']:
-            renderArguments['topResults'] = renderArguments['foundPages']
-        else:
-            renderArguments['topResults'] = renderArguments['amountOfResults']
             
     return render(request, 'search.html', renderArguments)
 
@@ -165,14 +159,3 @@ def deleteTable(request, table):
         return redirect('/manage-database')
     
     return render(request, 'delete.html', renderArguments)
-    
-def processTable(request, table):
-    renderArguments = {}
-    renderArguments['activeTab'] = "/manage-database"
-    renderArguments['table'] = table
-    
-    if request.method == "POST":
-        database.preProcessTable(table)
-        return redirect('/manage-database')
-    
-    return render(request, 'pre-process.html', renderArguments)
