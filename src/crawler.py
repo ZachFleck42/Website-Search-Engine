@@ -25,10 +25,8 @@ def crawlWebsite(initialURL):
     initialURL = "https://" + urlparse(temp).hostname
 
     # Check if URL is connectable
-    couldNotConnect = 0
-    try: pageResponse = getPageResponse(initialURL)
-    except: couldNotConnect = 1
-    if couldNotConnect or (pageResponse.status_code != 200):
+    pageResponse = getPageResponse(initialURL)
+    if not pageResponse:
         print(f'ERROR: Could not connect to "{initialURL}"')
         return (0, 0)
 
@@ -62,7 +60,7 @@ def processURL(url, databaseTable):
     Parent function for connecting to and scraping/storing data from an individual webpage.
     Returns 1 if page was processed without error.
     '''
-    # DEBUG: print(f"Processing {url}")
+    print(f"Processing {url}")
 
     # Get the page's HTML and parse it
     # DEBUG: print(f"Getting page response for {url}")
@@ -148,7 +146,8 @@ def cleanLinks(links, pageURL):
                     "/Source:", "/Forum:", "/Forum_talk:", "/javascript:void",
                     "/ru/", "/es/", "/ja/", "/de/", "/fi/", "/fr/", "/f/", "/pt-br/",
                     "/uk/", "/he/", "/tr/", "/vi/", "/sv/", "/lt/", "/pl/", "/hu/",
-                    "/ko/", "/da/", "/zh/", "/cs/", "/nl/", "/it/", "/el/", "/pt/", "/th/", "/id/"]
+                    "/ko/", "/da/", "/zh/", "/cs/", "/nl/", "/it/", "/el/", "/pt/",
+                    "/th/", "/id/"]
 
     # Tuple, not list, because surprisingly str.endswith() accepts tuples
     badExtensions = (".jpg", ".png", ".gif", ".pdf", ".aspx",
