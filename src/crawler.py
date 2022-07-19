@@ -1,11 +1,8 @@
 import src.database_utils as database
-import nltk
-import re
 import src.redis_utils as redis
 import requests
 from bs4 import BeautifulSoup
 from celery import Celery
-from nltk.tokenize import word_tokenize
 from time import time
 from urllib.parse import urlparse
 
@@ -41,7 +38,6 @@ def crawlWebsite(initialURL):
     database.createTable(tableName)
     
     # Make sure necessary text-processing files are present and cache is clear
-    nltk.download('punkt')
     redis.clearCache()
     
     # Add the initial URL to the queue
@@ -103,43 +99,10 @@ def scrapeData(parsedPage):
     pageText = parsedPage.get_text()
     pageDesc = str(parsedPage.find("meta", attrs={'name': 'description'}))[14:-21]
     if not pageDesc:
-        pageDesc = "No page description available."
-
-    processedPageText = preProcessText(pageText)
+        pageDesc = "None"
     
-    return (pageTitle, pageDesc, processedPageText)
+    return (pageTitle, pageDesc, pageText)
     
-    
-def preProcessText(pageText):
-    '''
-    Accepts the text of a webpage as a string and returns the 'processed' text.
-    Removes extra whitespace, punctuation, and unwanted words.
-    '''
-    stop_words = ["i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you", 
-        "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", 
-        "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs", 
-        "themselves", "what", "which", "who", "whom", "this", "that", "these", "those",
-        "am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", 
-        "having", "do", "does", "did", "doing", "a", "an", "the", "and", "but", "if", "or", 
-        "because", "as", "until", "while", "of", "at", "by", "for", "with", "about", 
-        "against", "between", "into", "through", "during", "before", "after", "above", 
-        "below", "to", "from", "up", "down", "in", "out", "on", "off", "over", "under", 
-        "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", 
-        "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", 
-        "nor", "not", "only", "own", "same", "so", "than", "too", "very", "s", "t", "can", 
-        "will", "just", "don", "should", "now"]
-        
-    # Remove unwanted characters
-    step1 = re.sub(r'[^A-Za-z0-9\'\-]', ' ', pageText)
-    
-    # Tokenize the text
-    step2 = word_tokenize(step1)
-    
-    # Remove all stopwords from the text
-    step3 = [word for word in step2 if not word.lower() in stop_words]
-    
-    return " ".join(step3)
-
 
 def getLinks(url, parsedPage):
     '''
@@ -166,7 +129,8 @@ def filterLinks(links, pageURL):
     unwantedTags = ["/Category:", "/File:", "/Talk:", "/User", "/Blog:", "/User_blog:", "/Special:", "/Template:", 
                     "/Template_talk:", "Wiki_talk:", "/Help:", "/Source:", "/Forum:", "/Forum_talk:", "/ru/", "/es/", 
                     "/ja/", "/de/", "/fi/", "/fr/", "/f/", "/pt-br/", "/uk/", "/he/", "/tr/", "/vi/", "/sv/", "/lt/", 
-                    "/pl/", "/hu/", "/ko/", "/da/", "/zh/", "/cs/", "/nl/", "/it/", "/el/", "/pt/", "/th/", "/id/"]
+                    "/pl/", "/hu/", "/ko/", "/da/", "/zh/", "/cs/", "/nl/", "/it/", "/el/", "/pt/", "/th/", "/id/",
+                    "/javascript:void"]
     unwantedLanguages = ["/es", "/de", "/ja", "/fr", "/zh", "/pl", "/ru", "/nl", "/uk", "/ko", "/it", "/hu", "/sv", 
                         "/cs", "/ms", "/da"]
     unwantedExtensions = ["jpg", "png", "gif", "pdf"]
@@ -230,7 +194,12 @@ def processingQueue():
     '''
     Checks if Celery worker still has active tasks. If so, returns the list of tasks.
     '''
-    if activeTasksDict := app.control.inspect().active():
+    inspect = app.control.inspect()
+    activeTasksDict = inspect.active()
+    scheduledTasksDict = inspect.scheduled()
+    if activeTasksDict:
         return list(activeTasksDict.items())[0][1]
+    elif scheduledTasksDict:
+        return list(scheduledTasksDict.items())[0][1]
     else:
         return 0

@@ -1,4 +1,7 @@
+import nltk
 import psycopg2
+import re
+from nltk.tokenize import word_tokenize
 from psycopg2 import sql
 from urllib.parse import urlparse
 
@@ -94,7 +97,7 @@ def appendData(url, pageData, tableName):
     databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
     databaseCursor = databaseConnection.cursor()
         
-    databaseCursor.execute(sql.SQL("INSERT INTO {} VALUES (%s, %s, %s, %s);").format(
+    databaseCursor.execute(sql.SQL("INSERT INTO {} VALUES (%s, %s, %s, %s)").format(
         sql.Identifier(tableName)),
         [url, pageTitle, pageDesc, pageText])
     
@@ -167,5 +170,56 @@ def deleteRow(tableName, pageURL):
         col = sql.Identifier('page_url'))
     databaseCursor.execute(query, (pageURL,))
     
+    databaseConnection.commit()
+    databaseConnection.close()
+    
+
+def preProcessText(pageText):
+    '''
+    Accepts the text of a webpage as a string and returns the 'processed' text.
+    Removes extra whitespace, punctuation, and unwanted words.
+    '''
+    stop_words = ["i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you", 
+        "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", 
+        "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs", 
+        "themselves", "what", "which", "who", "whom", "this", "that", "these", "those",
+        "am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", 
+        "having", "do", "does", "did", "doing", "a", "an", "the", "and", "but", "if", "or", 
+        "because", "as", "until", "while", "of", "at", "by", "for", "with", "about", 
+        "against", "between", "into", "through", "during", "before", "after", "above", 
+        "below", "to", "from", "up", "down", "in", "out", "on", "off", "over", "under", 
+        "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", 
+        "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", 
+        "nor", "not", "only", "own", "same", "so", "than", "too", "very", "s", "t", "can", 
+        "will", "just", "don", "should", "now"]
+        
+    # Remove unwanted characters
+    step1 = re.sub(r'[^A-Za-z0-9\'\-]', ' ', pageText)
+    
+    # Tokenize the text
+    step2 = word_tokenize(step1)
+    
+    # Remove all stopwords from the text
+    step3 = [word for word in step2 if not word.lower() in stop_words]
+    
+    return " ".join(step3)
+
+
+def preProcessTable(tableName):
+    websiteData = fetchAllData(tableName)
+    nltk.download('punkt')
+    
+    databaseConnection = psycopg2.connect(**databaseConnectionParamaters)
+    databaseCursor = databaseConnection.cursor()
+    
+    for pageData in websiteData:
+        pageURL = pageData[0]
+        pageText = pageData[3]
+        processedText = preProcessText(pageText)
+        
+        databaseCursor.execute(sql.SQL("UPDATE {} SET page_text = %s WHERE page_url = %s").format(
+            sql.Identifier(tableName)),
+            [processedText, pageURL])
+        
     databaseConnection.commit()
     databaseConnection.close()
