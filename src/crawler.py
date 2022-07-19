@@ -20,9 +20,9 @@ def crawlWebsite(initialURL):
     startCrawlTime = time()
 
     # Normalize user-input URL
-    initialURL = initialURL.rstrip('/') + '/'
     if "http" not in initialURL:
-        initialURL = "https://" + initialURL
+        temp = "https://" + initialURL
+    initialURL = "https://" + urlparse(temp).hostname
 
     # Check if URL is connectable
     couldNotConnect = 0
@@ -159,21 +159,27 @@ def cleanLinks(links, pageURL):
 
     cleanLinks = []
     for link in links:
-        potentialLink = link
+        potentialLink = link.rstrip('/')
 
+        # Filter links to the initial URL
+        if not potentialLink:
+            continue
+
+        # Filter links that end with unwanted extensions
         if potentialLink.endswith(badExtensions):
             continue
 
+        # Filter links that contain unwanted tags/sequences
         if any(tag in potentialLink for tag in badInclusions):
             continue
 
-        # Delete any page anchors and/or queries
+        # Remove any page anchors and/or queries from link
         if not (potentialLink := potentialLink.split('#', 1)[0]):
             continue
         if not (potentialLink := potentialLink.split('?', 1)[0]):
             continue
 
-        # Expand internal links
+        # Expand website references to full URL
         if "http" not in potentialLink:
             if potentialLink[0] == '/':
                 potentialLink = "https://" + parsedPage.hostname + potentialLink
@@ -185,7 +191,7 @@ def cleanLinks(links, pageURL):
             continue
 
         # Only visit https:// URLs (not http://)
-        if urlparse(potentialLink).scheme != "https":
+        if urlparse(potentialLink).scheme == "http":
             potentialLink = "https" + potentialLink[4:]
 
         # Link has passed through all filters and is suitable to be appended to queue
