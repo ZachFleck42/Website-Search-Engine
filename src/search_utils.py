@@ -17,10 +17,10 @@ def runSearch(tableName, userInput, searchMethod):
     startSearchTime = time()
     websiteData = fetchAllData(tableName)
     needle = userInput.lower()
-    
+
     # Keep track of page titles to prevent duplicate entries caused by redirects
     searchTitles = []
-        
+
     # Store the search results in a list of lists
     searchResults = []
     for pageData in websiteData:
@@ -28,7 +28,7 @@ def runSearch(tableName, userInput, searchMethod):
         pageTitle = pageData[1]
         pageDesc = pageData[2]
         haystack = pageData[3].lower()
-        
+
         numberOfMatches = 0
         if searchMethod == "COUNT":       # Search method is Python str.count() method
             numberOfMatches = (haystack.count(needle))
@@ -44,11 +44,11 @@ def runSearch(tableName, userInput, searchMethod):
             kwtree.finalize()
             if resultsFound := kwtree.search_all(haystack):
                 numberOfMatches = sum(1 for result in resultsFound)
-        
+
         if numberOfMatches > 0 and pageTitle not in searchTitles:
             searchResults.append((numberOfMatches, pageURL, pageTitle))
             searchTitles.append(pageTitle)
-            
+
     # Sort and return the list of results
     searchResultsSorted = (sorted(searchResults, reverse=True))
     searchTime = time() - startSearchTime

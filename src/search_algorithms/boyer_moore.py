@@ -5,7 +5,7 @@ def alphabet_index(c):
     if val > ALPHABET_SIZE:
         return 63
     return val
- 
+
 def match_length(S, idx1, idx2):
     if idx1 == idx2:
         return len(S) - idx1
@@ -15,7 +15,7 @@ def match_length(S, idx1, idx2):
         idx1 += 1
         idx2 += 1
     return match_count
- 
+
 def fundamental_preprocess(S):
     if len(S) == 0:
         return []
@@ -45,7 +45,7 @@ def fundamental_preprocess(S):
                 l = i
                 r = i + z[i] - 1
     return z
- 
+
 def bad_character_table(S):
     if len(S) == 0:
         return [[] for a in range(ALPHABET_SIZE)]
@@ -56,7 +56,7 @@ def bad_character_table(S):
         for j, a in enumerate(alpha):
             R[j].append(a)
     return R
- 
+
 def good_suffix_table(S):
     L = [-1 for c in S]
     N = fundamental_preprocess(S[::-1])
@@ -66,7 +66,7 @@ def good_suffix_table(S):
         if i != len(S):
             L[i] = j
     return L
- 
+
 def full_shift_table(S):
     F = [0 for c in S]
     Z = fundamental_preprocess(S)
@@ -75,16 +75,16 @@ def full_shift_table(S):
         longest = max(zv, longest) if zv == i + 1 else longest
         F[-i - 1] = longest
     return F
- 
+
 def BMsearch(P, T):
     if len(P) == 0 or len(T) == 0 or len(T) < len(P):
         return []
- 
+
     matches = []
     R = bad_character_table(P)
     L = good_suffix_table(P)
     F = full_shift_table(P)
- 
+
     k = len(P) - 1
     previous_k = -1
     while k < len(T):

@@ -14,41 +14,41 @@
         {% else %}
             <option disabled selected value="">Website</option>
         {% endif %}
-        
+
         {% for website in searchableWebsites %}
             {% if website != searchWebsite %}
                 <option value="{{website}}">{{website}}</option>
             {% endif %}
         {% endfor %}
     </select>
-    
+
     <select name="input_method" class="inputBox">
         {% if searchMethod %}
             <option selected value="{{searchMethod}}">{{searchMethodName}}</option>
         {% else %}
             <option disabled selected value="">Search method</option>
         {% endif %}
-        
+
         {% for method in searchMethods %}
             {% if method.1 != searchMethod %}
                 <option value="{{method.1}}">{{method.0}}</option>
             {% endif %}
         {% endfor %}
     </select>
-    
+
     {% if searchTerm %}
         <input autocomplete="off" class="inputBox" name="input_search" type="text" value="{{searchTerm}}" onfocus="value=''">
     {% else %}
         <input autocomplete="off" class="inputBox" name="input_search" placeholder="Search term" type="text">
     {% endif %}
-        
+
     <select name="input_amount" class="inputBox">
         {% if amountOfResults %}
             <option selected value="{{amountOfResults}}">{{amountOfResults}}</option>
         {% else %}
             <option disabled selected value="">No. of Results to Display</option>
         {% endif %}
-        
+
         {% for option in amountOfResultsOptions %}
             {% if option != amountOfResults %}
                 <option value="{{option}}">{{option}}</option>
@@ -68,7 +68,7 @@
 {% endif %}
 
 {% if searchTerm %}
-    {% if searchResults %}  
+    {% if searchResults %}
         <p>Displaying top {{topResults}} of {{foundPages}} pages for "{{searchTerm}}" (searched {{totalPages}} pages in {{searchTime}} milliseconds)</p>
         <p>Click on a page title to visit its URL.</p>
         <table class="table table-bordered table-striped">

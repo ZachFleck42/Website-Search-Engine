@@ -17,7 +17,7 @@ def RKsearch(pat, txt, q=13):
         p = (ALPHABET_SIZE*p + ord(pat[i])) % q
         t = (ALPHABET_SIZE*t + ord(txt[i])) % q
 
-    for i in range(N-M+1): 
+    for i in range(N-M+1):
         if p == t:
             for j in range(M):
                 if txt[i+j] != pat[j]:
@@ -31,5 +31,5 @@ def RKsearch(pat, txt, q=13):
             t = (ALPHABET_SIZE*(t-ord(txt[i])*h) + ord(txt[i+M])) % q
             if t < 0:
                 t = t+q
-                
+
     return results
