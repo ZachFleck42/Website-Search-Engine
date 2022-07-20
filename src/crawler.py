@@ -157,8 +157,7 @@ def cleanLinks(links, pageURL):
     '''
     badInclusions = ["mailto:", "tel:", "/Category:", "/File:",
                     "/Talk:", "/User:", "/Blog:", "/User_blog:", "/Special:",
-                    "/Template:", "/Template_talk:", "Wiki_talk:",  "/Help:",
-                    "/Source:", "/Forum:", "/Forum_talk:", "/javascript:void",
+                    "/Template:", "/Help:", "/Source:", "/Forum:", "_talk:"
                     "/ru/", "/es/", "/ja/", "/de/", "/fi/", "/fr/", "/f/", "/pt-br/",
                     "/uk/", "/he/", "/tr/", "/vi/", "/sv/", "/lt/", "/pl/", "/hu/",
                     "/ko/", "/da/", "/zh/", "/cs/", "/nl/", "/it/", "/el/", "/pt/",
@@ -168,8 +167,10 @@ def cleanLinks(links, pageURL):
     badExtensions = (".jpg", ".png", ".gif", ".pdf", ".aspx",
                     "/view", "/download",
                     "/es", "/de", "/ja", "/fr", "/zh", "/pl", "/ru", "/nl", "/uk",
-                    "/ko", "/it", "/hu", "/sv", "/cs", "/ms", "/da")
+                    "/ko", "/it", "/hu", "/sv", "/cs", "/ms", "/da", "/pt-br", "/vi",
+                    "/pt-pt", "/tr")
 
+    javaNonsense = "/javascript:void(0);"
     parsedPage = urlparse(pageURL)
 
     cleanLinks = []
@@ -208,6 +209,10 @@ def cleanLinks(links, pageURL):
         # Only visit https:// URLs (not http://)
         if urlparse(potentialLink).scheme == "http":
             potentialLink = "https" + potentialLink[4:]
+
+        # Trim this javascript nonsense
+        if javaNonsense in potentialLink:
+            potentialLink = potentialLink.replace(javaNonsense, '')
 
         # Link has passed through all filters and is suitable to be appended to queue
         cleanLinks.append(potentialLink)
