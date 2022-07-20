@@ -14,7 +14,6 @@ app.conf.result_backend = 'redis://redis:6379/1'
 def crawlWebsite(initialURL):
     '''
     Parent function for connecting to and scraping/storing data from an entire website.
-    Initializes queue, database connections, and asset downloads.
     Returns the total number of webpages visited by the crawler.
     '''
     startCrawlTime = time()
@@ -58,7 +57,6 @@ def crawlWebsite(initialURL):
 def processURL(url, databaseTable):
     '''
     Parent function for connecting to and scraping/storing data from an individual webpage.
-    Returns 1 if page was processed without error.
     '''
     print(f"Processing {url}")
 
@@ -68,7 +66,6 @@ def processURL(url, databaseTable):
     if not pageResponse:
         print(f"ERROR: Could not connect to {url}")
         return 0
-
     # DEBUG: print(f"Parsing page for {url}")
     parsedPage = BeautifulSoup(pageResponse.text, 'html.parser')
 
@@ -81,11 +78,12 @@ def processURL(url, databaseTable):
         #print(f"Adding {link} to queue")
         redis.addToQueue(link)
 
-    # Scrape data from the page and append it to database
+    # Scrape data from the page and append it to the database
     # DEBUG: print(f"Scraping data from {url}")
     pageData = scrapeData(parsedPage)
     # DEBUG: print(f"Appending data from {url}")
     database.appendData(url, pageData, databaseTable)
+    # DEBUG: print(f"Finished processing {url}")
 
 
 def getPageResponse(url):

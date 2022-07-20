@@ -4,7 +4,6 @@ from nltk.tokenize import word_tokenize
 from psycopg2 import sql
 from urllib.parse import urlparse
 
-
 databaseConnectionParamaters = {"host": "postgres", "database": "searchEngineDb", "user": "postgres", "password": "postgres"}
 
 

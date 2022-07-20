@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}Manage | {{table}}{% endblock %}
 {% block content %}
-<br>
 <p>Pre-processing a database will remove punctuation, unimportant words ("stop words"), and extra whitespace from all page_text data.</p>
 <p class="tab"> - Because the text of each page will be reduced to 'important' words only, filesizes will be reduced <i>and</i> search algorithms will have significantly smaller 'haystacks' to search.</p>
 <p class="tab"> - However, searches for exact strings longer than a few words will no longer be possible.</p>

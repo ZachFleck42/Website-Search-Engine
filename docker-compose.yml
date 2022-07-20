@@ -16,12 +16,15 @@ services:
     image: redis:7.0
     ports:
       - 6379:6379
-    
+
+      # celery -A src.crawler worker --detach  &&
+
   app:
     build: .
+    volumes:
+    - .:/search_engine
     command: bash -c "
       python manage.py migrate &&
-      celery -A src.crawler worker --detach  &&
       python manage.py runserver 0.0.0.0:8000"
     ports:
       - 8000:8000
