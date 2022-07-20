@@ -8,28 +8,28 @@ And the dynamic frontend provides an easy-to-use interface for control of the ap
 <br>
 
 ## Application architecture:
-Docker integrates and connects the application's services, allowing for quick and easy startup/shutdown.
+Docker integrates and connects the application's three main services, making startup/development quick and painless:
 
-- A PostgresSQL database for persistent data storage.
-- Redis as a message-broker, queue manager, and general backend service.
-- Django as a web framework, both hosting and rendering a dynamic frontend that controls/interfaces with:
+1. A PostgresSQL database for persistent data storage.
+2. Redis as a message-broker, queue manager, and general backend service.
+3. Django as a web framework, both hosting and rendering a dynamic frontend that controls/interfaces with:
 
-  * My own implementation of website crawler that uses:
+   * My own implementation of website crawler that uses:
   
-    - Requests and BeautifulSoup to connect to and parse webpages.
-    - Psycopg2 to execute SQL queries and create/modify/delete databases.
-    - Celery for asynchronous task processing/execution.
+     - Requests and BeautifulSoup to connect to and parse webpages.
+     - Psycopg2 to execute SQL queries and create/modify/delete databases.
+     - Celery for asynchronous task processing/execution.
     
-  * A custom-made search engine that uses:
+   * A custom-made search engine that uses:
   
-    - Four different search algorithms (Boyer-Moore, Knuth-Morris-Pratt, Aho-Corasick, Robin-Karp)
-    - NLTK for text pre-processing utilities and techniques.
+     - Four different search algorithms (Boyer-Moore, Knuth-Morris-Pratt, Aho-Corasick, Robin-Karp)
+     - NLTK for text pre-processing utilities and techniques.
     
-  * My implementation of a database management interface that allows a user to:
+   * My implementation of a database management interface that allows a user to:
     
-    - Quickly and easily view, manipulate, or delete tables within the database (or entries within each table).
+     - Quickly and easily view, manipulate, or delete tables within the database (or entries within each table).
     
-Plus a whole suite of custom utilities and functions to increase portability and readability of the program.
+Plus, a whole suite of custom utilities and functions increase the portability and readability of the program.
 
 <br>
 
