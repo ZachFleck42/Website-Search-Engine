@@ -8,7 +8,7 @@ And the dynamic frontend provides an easy-to-use interface for control of the ap
 <br>
 
 ## Application architecture:
-Docker integrates and connects the following services, allowing for quick and easy startup/shutdown of the application.
+Docker integrates and connects the application's services, allowing for quick and easy startup/shutdown.
 
 - A PostgresSQL database for persistent data storage.
 - Redis as a message-broker, queue manager, and general backend service.
