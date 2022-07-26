@@ -157,7 +157,7 @@ def cleanLinks(links, pageURL):
     '''
     badInclusions = ["mailto:", "tel:", "/Category:", "/File:",
                     "/Talk:", "/User:", "/Blog:", "/User_blog:", "/Special:",
-                    "/Template:", "/Help:", "/Source:", "/Forum:", "_talk:"
+                    "/Template:", "/Help:", "/Source:", "/Forum:", "_talk:",
                     "/ru/", "/es/", "/ja/", "/de/", "/fi/", "/fr/", "/f/", "/pt-br/",
                     "/uk/", "/he/", "/tr/", "/vi/", "/sv/", "/lt/", "/pl/", "/hu/",
                     "/ko/", "/da/", "/zh/", "/cs/", "/nl/", "/it/", "/el/", "/pt/",
@@ -168,7 +168,7 @@ def cleanLinks(links, pageURL):
                     "/view", "/download",
                     "/es", "/de", "/ja", "/fr", "/zh", "/pl", "/ru", "/nl", "/uk",
                     "/ko", "/it", "/hu", "/sv", "/cs", "/ms", "/da", "/pt-br", "/vi",
-                    "/pt-pt", "/tr")
+                    "/pt-pt", "/tr", "/el", "/fi", "/no", "/th", "/id", "/lt")
 
     javaNonsense = "/javascript:void(0);"
     parsedPage = urlparse(pageURL)
