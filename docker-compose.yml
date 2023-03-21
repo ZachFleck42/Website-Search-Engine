@@ -1,4 +1,4 @@
-version: '3.9'
+version: '3'
 
 services:
   postgres:
@@ -32,3 +32,6 @@ services:
     depends_on:
       - postgres
       - redis
+    healthcheck:
+      test: "exit 0"
+    restart: on-failure
